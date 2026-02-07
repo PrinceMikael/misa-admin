@@ -1,36 +1,154 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Misa Admin Dashboard
+
+Parish management dashboard for the Misa Catholic parish platform.
+
+## Features
+
+✅ **Authentication** - Secure login for parish administrators
+✅ **Dark/Light Mode** - Toggle between themes
+✅ **Parish Management** - Add and edit church details, location, contact info
+✅ **Mass Schedules** - Create, edit, and delete Mass schedules
+✅ **Mass Intentions** - View and manage submitted Mass intentions
+✅ **Dashboard** - Overview with key statistics
+
+## Tech Stack
+
+- **Frontend**: Next.js 16 (App Router), React 19, TypeScript
+- **Styling**: Tailwind CSS 4, Material Symbols Icons
+- **Backend**: Firebase (Authentication, Firestore)
+- **State Management**: React Context API
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Run Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+misa-admin/
+├── src/
+│   ├── app/                    # Next.js app router pages
+│   │   ├── login/             # Login page
+│   │   ├── dashboard/         # Main dashboard
+│   │   ├── parish/            # Parish details management
+│   │   ├── schedules/         # Mass schedules management
+│   │   ├── intentions/        # Mass intentions viewer
+│   │   └── settings/          # Settings page
+│   ├── components/            # Reusable components
+│   │   ├── Sidebar.tsx        # Navigation sidebar
+│   │   ├── ProtectedRoute.tsx # Auth protection
+│   │   └── DashboardLayout.tsx
+│   ├── contexts/              # React contexts
+│   │   ├── AuthContext.tsx    # Authentication state
+│   │   └── ThemeContext.tsx   # Theme state
+│   ├── lib/                   # Firebase configuration
+│   └── types/                 # TypeScript types
+```
 
-## Learn More
+## Setting Up Parish Admin Accounts
 
-To learn more about Next.js, take a look at the following resources:
+### Using Firebase Console
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Go to Firebase Console → Authentication
+2. Add new user with email/password
+3. Go to Firestore Database
+4. Create document in `users` collection with the SAME user UID:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```json
+{
+  "email": "admin@parish.com",
+  "role": "PARISH_ADMIN",
+  "parishId": "your-parish-id",
+  "displayName": "Parish Admin Name",
+  "createdAt": [Timestamp]
+}
+```
 
-## Deploy on Vercel
+**Note**: The document ID must match the Firebase Auth UID!
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## How to Use the Dashboard
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 1. Login
+
+- Use your parish admin email and password
+- First-time users will be redirected to login
+
+### 2. Parish Details
+
+- Navigate to **Parish Details**
+- Fill in all required information:
+  - Parish name (English & Swahili)
+  - Diocese
+  - Address
+  - Location coordinates (get from Google Maps: right-click → click coordinates)
+  - Contact information
+- Upload parish image
+- Click **Save Changes**
+
+### 3. Mass Schedules
+
+- Navigate to **Mass Schedules**
+- Click **Add Schedule**
+- Fill in schedule details:
+  - Day of week
+  - Time
+  - Language
+  - Priest name (optional)
+  - Location (optional)
+- Click **Add Schedule** to save
+- Edit or delete schedules as needed
+
+### 4. Mass Intentions
+
+- Navigate to **Mass Intentions**
+- View all submitted intentions
+- Filter by status: Pending, Approved, Completed, Rejected
+- Actions:
+  - **Approve** - Accept the intention
+  - **Reject** - Decline the intention
+  - **Mark as Completed** - Mark approved intention as done
+  - **Move to Pending** - Return to pending status
+
+### 5. Dashboard
+
+- View key statistics:
+  - Total Mass schedules
+  - Pending intentions count
+  - Approved intentions count
+- See today's Mass schedules
+- View recent Mass intentions
+
+## Dark Mode
+
+Click the theme toggle button in the sidebar to switch between light and dark modes.
+
+## Deployment
+
+### Deploy to Vercel
+
+```bash
+npm install -g vercel
+vercel
+```
+
+## Security Notes
+
+- Parish admins can only manage their own parish data
+- Protected routes require authentication
+- Firebase security rules enforce data access control
+
+## Support
+
+For issues or questions, contact your diocese administrator.
