@@ -39,7 +39,9 @@ export default function NoticesPage() {
   });
 
   useEffect(() => {
-    if (userData?.parishId) loadNotices();
+    if (!userData) return;
+    if (userData.parishId) loadNotices();
+    else setLoading(false);
   }, [userData]);
 
   const loadNotices = async () => {

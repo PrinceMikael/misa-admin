@@ -41,7 +41,9 @@ export default function SchedulesPage() {
   });
 
   useEffect(() => {
-    if (userData?.parishId) loadSchedules();
+    if (!userData) return;
+    if (userData.parishId) loadSchedules();
+    else setLoading(false);
   }, [userData]);
 
   const loadSchedules = async () => {

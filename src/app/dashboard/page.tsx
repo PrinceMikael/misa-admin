@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { MassSchedule, MassIntention } from '@/types';
 import Link from 'next/link';
@@ -19,7 +20,8 @@ const INTENTION_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function DashboardPage() {
-  const { userData } = useAuth();
+  const { userData, isSuperAdmin } = useAuth();
+  const router = useRouter();
   const [stats, setStats] = useState({
     totalSchedules: 0,
     pendingIntentions: 0,
@@ -31,10 +33,17 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (userData?.parishId) {
-      loadDashboardData();
+    if (!userData) return;
+    if (isSuperAdmin) {
+      router.replace('/super/analytics');
+      return;
     }
-  }, [userData]);
+    if (userData.parishId) {
+      loadDashboardData();
+    } else {
+      setLoading(false);
+    }
+  }, [userData, isSuperAdmin]);
 
   const loadDashboardData = async () => {
     if (!userData?.parishId) return;
@@ -124,6 +133,14 @@ export default function DashboardPage() {
               <div className="w-12 h-12 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
               <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
             </div>
+          </div>
+        ) : !userData?.parishId ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4">church</span>
+            <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Haujapewa Parokia</h2>
+            <p className="text-gray-500 dark:text-gray-400 max-w-sm">
+              Akaunti yako bado haijaunganishwa na parokia yoyote. Wasiliana na msimamizi mkuu ili akupange parokia.
+            </p>
           </div>
         ) : (
           <>

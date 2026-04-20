@@ -34,7 +34,9 @@ export default function IntentionsPage() {
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (userData?.parishId) loadIntentions();
+    if (!userData) return;
+    if (userData.parishId) loadIntentions();
+    else setLoading(false);
   }, [userData]);
 
   const loadIntentions = async () => {

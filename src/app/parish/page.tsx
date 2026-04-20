@@ -41,7 +41,9 @@ export default function ParishPage() {
   });
 
   useEffect(() => {
-    if (userData?.parishId) loadParish();
+    if (!userData) return;
+    if (userData.parishId) loadParish();
+    else setLoading(false);
   }, [userData]);
 
   const loadParish = async () => {
