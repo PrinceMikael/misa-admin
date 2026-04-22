@@ -13,18 +13,18 @@ interface NavItem {
 }
 
 const parishNavItems: NavItem[] = [
-  { href: '/dashboard', icon: 'dashboard', label: 'Dashibodi' },
-  { href: '/parish', icon: 'church', label: 'Taarifa za Parokia' },
-  { href: '/schedules', icon: 'calendar_month', label: 'Ratiba za Misa' },
-  { href: '/intentions', icon: 'assignment', label: 'Nia za Misa' },
-  { href: '/notices', icon: 'campaign', label: 'Matangazo' },
-  { href: '/settings', icon: 'settings', label: 'Mipangilio' },
+  { href: '/dashboard',  icon: 'dashboard',       label: 'Dashibodi' },
+  { href: '/parish',     icon: 'church',           label: 'Taarifa za Parokia' },
+  { href: '/schedules',  icon: 'calendar_month',   label: 'Ratiba za Misa' },
+  { href: '/intentions', icon: 'assignment',       label: 'Nia za Misa' },
+  { href: '/notices',    icon: 'campaign',         label: 'Matangazo' },
+  { href: '/settings',   icon: 'settings',         label: 'Mipangilio' },
 ];
 
 const superNavItems: NavItem[] = [
-  { href: '/super/parishes', icon: 'location_city', label: 'Parokia Zote' },
-  { href: '/super/admins', icon: 'manage_accounts', label: 'Wasimamizi' },
-  { href: '/super/analytics', icon: 'bar_chart', label: 'Takwimu' },
+  { href: '/super/parishes',  icon: 'location_city',   label: 'Parokia Zote' },
+  { href: '/super/admins',    icon: 'manage_accounts', label: 'Wasimamizi' },
+  { href: '/super/analytics', icon: 'bar_chart',       label: 'Takwimu' },
 ];
 
 interface SidebarProps {
@@ -39,14 +39,14 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const { pendingCount } = useNotifications();
 
   const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
+    try { await signOut(); } catch (e) { console.error(e); }
   };
 
-  const NavLink = ({ item }: { item: NavItem }) => {
+  const initials = userData?.displayName
+    ? userData.displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
+    : 'MA';
+
+  const NavLink = ({ item, delay }: { item: NavItem; delay?: string }) => {
     const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
     const showBadge = item.href === '/intentions' && pendingCount > 0;
     return (
@@ -54,18 +54,24 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         <Link
           href={item.href}
           onClick={onClose}
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-            isActive
-              ? 'bg-primary text-white'
-              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-          }`}
+          style={delay ? { animationDelay: delay } : {}}
+          className={`
+            group flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium
+            transition-all duration-150 relative
+            ${isActive
+              ? 'bg-white/10 text-white border-l-2 border-[#c4933f] pl-3.5'
+              : 'text-[#9db8a8] hover:text-white hover:bg-white/8 border-l-2 border-transparent pl-3.5'
+            }
+          `}
         >
-          <span className="material-symbols-outlined text-xl">{item.icon}</span>
-          <span className="font-medium flex-1">{item.label}</span>
+          <span className={`material-symbols-outlined text-[18px] shrink-0 transition-colors ${
+            isActive ? 'text-[#c4933f]' : 'text-[#6b9080] group-hover:text-[#c4933f]'
+          }`}>
+            {item.icon}
+          </span>
+          <span className="flex-1">{item.label}</span>
           {showBadge && (
-            <span className={`inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-xs font-bold ${
-              isActive ? 'bg-white text-primary' : 'bg-red-500 text-white'
-            }`}>
+            <span className="inline-flex items-center justify-center min-w-4.5 h-4.5 px-1 rounded-full text-[10px] font-bold bg-[#c4933f] text-white">
               {pendingCount > 99 ? '99+' : pendingCount}
             </span>
           )}
@@ -76,99 +82,132 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile overlay */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
           onClick={onClose}
         />
       )}
 
-      <aside className={`
-        fixed lg:sticky top-0 left-0 z-50 lg:z-auto
-        w-64 bg-white dark:bg-gray-900
-        flex flex-col h-screen
-        transform transition-transform duration-200 ease-in-out
-        shadow-lg lg:shadow-none
-        ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
-        {/* Logo & Title */}
-        <div className="p-6 bg-gray-50 dark:bg-gray-800/50">
+      <aside
+        className={`
+          grain
+          fixed lg:sticky top-0 left-0 z-50 lg:z-auto
+          w-64 flex flex-col h-screen
+          transform transition-transform duration-250 ease-in-out
+          lg:translate-x-0
+          ${open ? 'translate-x-0' : '-translate-x-full'}
+        `}
+        style={{ background: 'linear-gradient(180deg, #1a3d2e 0%, #122b20 100%)' }}
+      >
+        {/* Cross/ornament at very top */}
+        <div className="flex justify-center pt-6 pb-2">
+          <div className="text-[#c4933f] opacity-60 text-xl select-none" style={{ fontFamily: 'serif' }}>✦</div>
+        </div>
+
+        {/* Monogram badge */}
+        <div className="px-6 pb-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <span className="material-symbols-outlined text-white">church</span>
+            <div
+              className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-bold text-base"
+              style={{
+                background: 'linear-gradient(135deg, #c4933f, #e2b96a)',
+                color: '#1a3d2e',
+                fontFamily: 'var(--font-cormorant)',
+                fontSize: '1.125rem',
+                letterSpacing: '0.05em',
+              }}
+            >
+              {initials}
             </div>
             <div>
-              <h1 className="font-bold text-lg text-gray-900 dark:text-white">Misa Admin</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Usimamizi wa Parokia</p>
+              <p
+                className="text-white font-semibold leading-tight"
+                style={{ fontFamily: 'var(--font-cormorant)', fontSize: '1.125rem', letterSpacing: '0.01em' }}
+              >
+                Misa Admin
+              </p>
+              <p className="text-[#6b9080] text-[11px] tracking-wider uppercase font-medium mt-0.5">
+                Usimamizi
+              </p>
             </div>
           </div>
         </div>
 
+        {/* Gold rule */}
+        <div className="mx-5 mb-4">
+          <hr className="gold-rule" />
+        </div>
+
         {/* Navigation */}
-        <nav className="flex-1 p-4 overflow-y-auto">
-          {/* Parish Admin section — visible to all */}
-          <ul className="space-y-1">
-            {parishNavItems.map((item) => (
-              <NavLink key={item.href} item={item} />
+        <nav className="flex-1 px-3 overflow-y-auto space-y-0.5">
+          <p className="px-4 mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#4d7a63]">
+            Parokia
+          </p>
+          <ul className="space-y-0.5">
+            {parishNavItems.map((item, i) => (
+              <NavLink key={item.href} item={item} delay={`${i * 40}ms`} />
             ))}
           </ul>
 
-          {/* Super Admin section — only for SUPER_ADMIN */}
           {isSuperAdmin && (
             <>
-              <div className="mt-6 mb-2 px-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-                  Msimamizi Mkuu
-                </p>
+              <div className="mx-1 my-4">
+                <hr className="gold-rule" />
               </div>
-              <ul className="space-y-1">
-                {superNavItems.map((item) => (
-                  <NavLink key={item.href} item={item} />
+              <p className="px-4 mb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#c4933f]">
+                Msimamizi Mkuu
+              </p>
+              <ul className="space-y-0.5">
+                {superNavItems.map((item, i) => (
+                  <NavLink key={item.href} item={item} delay={`${(i + parishNavItems.length) * 40}ms`} />
                 ))}
               </ul>
             </>
           )}
         </nav>
 
-        {/* User Info & Actions */}
-        <div className="p-4 bg-gray-50 dark:bg-gray-800/50">
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 mb-2"
-          >
-            <span className="material-symbols-outlined text-xl">
-              {theme === 'dark' ? 'light_mode' : 'dark_mode'}
-            </span>
-            <span className="font-medium">{theme === 'dark' ? 'Mwanga' : 'Giza'}</span>
-          </button>
-
-          {/* User Info */}
+        {/* Bottom section */}
+        <div className="mx-5 mt-4 mb-4">
+          <hr className="gold-rule" />
+        </div>
+        <div className="px-3 pb-6 space-y-1">
+          {/* User info */}
           {userData && (
             <div className="px-4 py-2 mb-2">
-              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+              <p className="text-sm text-white font-medium truncate">
                 {userData.displayName || userData.email}
               </p>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+              <span
+                className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${
                   isSuperAdmin
-                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
-                    : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-                }`}>
-                  {isSuperAdmin ? 'Super Admin' : 'Parish Admin'}
-                </span>
-              </div>
+                    ? 'bg-[#c4933f]/20 text-gold-light'
+                    : 'bg-white/10 text-[#9db8a8]'
+                }`}
+              >
+                {isSuperAdmin ? 'Super Admin' : 'Parish Admin'}
+              </span>
             </div>
           )}
 
-          {/* Sign Out */}
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-[#9db8a8] hover:text-white hover:bg-white/8 text-sm font-medium transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px] text-[#6b9080]">
+              {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+            </span>
+            {theme === 'dark' ? 'Mwanga' : 'Giza'}
+          </button>
+
+          {/* Sign out */}
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-[#9db8a8] hover:text-[#f87171] hover:bg-white/8 text-sm font-medium transition-colors"
           >
-            <span className="material-symbols-outlined text-xl">logout</span>
-            <span className="font-medium">Toka</span>
+            <span className="material-symbols-outlined text-[18px]">logout</span>
+            Toka
           </button>
         </div>
       </aside>

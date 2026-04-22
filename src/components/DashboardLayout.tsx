@@ -9,23 +9,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex min-h-screen bg-parchment dark:bg-[#0e1f17]">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile Header */}
-          <header className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-900 shadow-sm lg:hidden">
+          <header
+            className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 lg:hidden"
+            style={{ background: 'linear-gradient(135deg, #1a3d2e, #122b20)', boxShadow: '0 1px 8px rgba(0,0,0,0.25)' }}
+          >
             <button
               onClick={() => setSidebarOpen(true)}
-              className="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="p-1.5 -ml-1 rounded-lg hover:bg-white/10 text-white transition-colors"
             >
               <span className="material-symbols-outlined">menu</span>
             </button>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="material-symbols-outlined text-white text-sm">church</span>
+            <div className="flex items-center gap-2.5">
+              <div
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-[#1a3d2e] font-bold text-xs"
+                style={{
+                  background: 'linear-gradient(135deg, #c4933f, #e2b96a)',
+                  fontFamily: 'var(--font-cormorant)',
+                }}
+              >
+                MA
               </div>
-              <span className="font-bold text-gray-900 dark:text-white">Misa Admin</span>
+              <span
+                className="text-white font-semibold"
+                style={{ fontFamily: 'var(--font-cormorant)', fontSize: '1.125rem' }}
+              >
+                Misa Admin
+              </span>
             </div>
           </header>
 

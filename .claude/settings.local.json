@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(taskkill /PID 12864 /F)",
+      "Bash(tasklist)",
+      "Bash(cmd /c \"netstat -ano | findstr \\\\\":300\\\\\"\")",
+      "Bash(cmd /c \"powershell -Command \\\\\"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id,CPU,MainWindowTitle | Format-Table\\\\\"\")",
+      "Bash(npx firebase-tools:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx --yes tsc --noEmit)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "mcp__plugin_firebase_firebase__auth_get_users",
+      "mcp__plugin_firebase_firebase__firestore_list_documents",
+      "mcp__plugin_firebase_firebase__firebase_get_environment",
+      "mcp__plugin_firebase_firebase__firebase_login",
+      "Bash(curl -s -X POST 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyAJnYy6FSSqbY9Xgzv3A0dLxS5ZECFP_I0' -H 'Content-Type: application/json' -d '{\"email\":\"superadmin@misa.app\",\"password\":\"Admin@1234!\",\"returnSecureToken\":true}')",
+      "Bash(curl -s -X POST 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyAJnYy6FSSqbY9Xgzv3A0dLxS5ZECFP_I0' -H 'Content-Type: application/json' -d '{\"email\":\"parishadmin@misa.app\",\"password\":\"Admin@1234!\",\"returnSecureToken\":true}')",
+      "mcp__plugin_firebase_firebase__firestore_add_document",
+      "mcp__plugin_firebase_firebase__firestore_update_document",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}
