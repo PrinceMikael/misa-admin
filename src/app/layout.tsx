@@ -21,6 +21,10 @@ const cormorant = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: 'Misa Admin — Dashibodi ya Parokia',
   description: 'Simamia taarifa za parokia yako, ratiba za Misa, na nia za Misa',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

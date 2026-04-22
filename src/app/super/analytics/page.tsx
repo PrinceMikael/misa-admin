@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import SuperAdminRoute from '@/components/SuperAdminRoute';
 import { Parish, User } from '@/types';
@@ -60,6 +61,7 @@ const ADMIN_STATUS_COLORS: Record<string, string> = {
 };
 
 export default function SuperAnalyticsPage() {
+  const { loading: authLoading } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -155,8 +157,8 @@ export default function SuperAnalyticsPage() {
   };
 
   useEffect(() => {
-    loadStats();
-  }, []);
+    if (!authLoading) loadStats();
+  }, [authLoading]);
 
   const totalIntentions = stats
     ? INTENTION_STATUSES.reduce((sum, s) => sum + (stats.intentionsByStatus[s] || 0), 0)

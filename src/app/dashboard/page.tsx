@@ -29,7 +29,7 @@ const STATUS_LABEL: Record<string, string> = {
 const DAY_NAMES = ['Jumapili', 'Jumatatu', 'Jumanne', 'Jumatano', 'Alhamisi', 'Ijumaa', 'Jumamosi'];
 
 export default function DashboardPage() {
-  const { userData, isSuperAdmin } = useAuth();
+  const { userData, isSuperAdmin, loading: authLoading } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState({ totalSchedules: 0, pendingIntentions: 0, approvedIntentions: 0, totalNotices: 0 });
   const [recentIntentions, setRecentIntentions] = useState<MassIntention[]>([]);
@@ -37,11 +37,12 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userData) return;
+    if (authLoading) return;
+    if (!userData) { setLoading(false); return; }
     if (isSuperAdmin) { router.replace('/super/analytics'); return; }
     if (!userData.parishId) { router.replace('/onboarding'); return; }
     loadDashboardData();
-  }, [userData, isSuperAdmin]);
+  }, [userData, isSuperAdmin, authLoading]);
 
   const loadDashboardData = async () => {
     if (!userData?.parishId) return;
