@@ -39,8 +39,8 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!userData) return;
     if (isSuperAdmin) { router.replace('/super/analytics'); return; }
-    if (userData.parishId) loadDashboardData();
-    else setLoading(false);
+    if (!userData.parishId) { router.replace('/onboarding'); return; }
+    loadDashboardData();
   }, [userData, isSuperAdmin]);
 
   const loadDashboardData = async () => {

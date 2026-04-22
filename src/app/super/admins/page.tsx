@@ -11,6 +11,7 @@ import {
   query,
   orderBy,
   Timestamp,
+  addDoc,
 } from 'firebase/firestore';
 import {
   initializeApp,
@@ -25,9 +26,15 @@ import {
 import { db, firebaseConfig } from '@/lib/firebase';
 import DashboardLayout from '@/components/DashboardLayout';
 import SuperAdminRoute from '@/components/SuperAdminRoute';
-import { Parish, User } from '@/types';
+import { User } from '@/types';
 
 type AdminUser = User & { parishName?: string };
+
+function generateToken(): string {
+  const arr = new Uint8Array(24);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+}
 
 const STATUS_LABELS: Record<string, string> = {
   active: 'Amiri',
@@ -43,16 +50,15 @@ const STATUS_STYLES: Record<string, string> = {
 
 export default function SuperAdminsPage() {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
-  const [parishes, setParishes] = useState<Parish[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteParishId, setInviteParishId] = useState('');
   const [inviteDisplayName, setInviteDisplayName] = useState('');
   const [inviteError, setInviteError] = useState('');
-  const [inviteSuccess, setInviteSuccess] = useState('');
+  const [inviteToken, setInviteToken] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const [actionTarget, setActionTarget] = useState<AdminUser | null>(null);
   const [actionType, setActionType] = useState<'disable' | 'enable' | 'delete' | null>(null);
@@ -63,33 +69,17 @@ export default function SuperAdminsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-
-      const [adminSnap, parishSnap] = await Promise.all([
-        getDocs(collection(db, 'users')),
-        getDocs(query(collection(db, 'parishes'), orderBy('name'))),
-      ]);
-
-      const parishList = parishSnap.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-        createdAt: d.data().createdAt?.toDate() || new Date(),
-        updatedAt: d.data().updatedAt?.toDate() || new Date(),
-      })) as Parish[];
-
-      const parishMap = new Map(parishList.map((p) => [p.id, p.name]));
-
+      const adminSnap = await getDocs(collection(db, 'users'));
       const adminList = adminSnap.docs
         .filter((d) => d.data().role === 'PARISH_ADMIN')
         .map((d) => ({
           id: d.id,
           ...d.data(),
           createdAt: d.data().createdAt?.toDate() || new Date(),
-          parishName: d.data().parishId ? parishMap.get(d.data().parishId) || 'Haijulikani' : '—',
+          parishName: d.data().parishId ? 'Imeunganishwa' : 'Bado haijaunganishwa',
         }))
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()) as AdminUser[];
-
       setAdmins(adminList);
-      setParishes(parishList);
     } catch (error) {
       console.error('Error loading admins:', error);
     } finally {
@@ -103,89 +93,98 @@ export default function SuperAdminsPage() {
 
   const openInvite = () => {
     setInviteEmail('');
-    setInviteParishId('');
     setInviteDisplayName('');
     setInviteError('');
-    setInviteSuccess('');
+    setInviteToken('');
+    setCopied(false);
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
     setInviteError('');
-    setInviteSuccess('');
+    setInviteToken('');
+    setCopied(false);
   };
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteParishId) {
-      setInviteError('Tafadhali chagua parokia.');
-      return;
-    }
-
     setInviteError('');
-    setInviteSuccess('');
     setInviting(true);
 
-    // Secondary Firebase app to create user without touching current admin session
     const SECONDARY_APP_NAME = 'misa-invite-secondary';
     let secondaryApp = getApps().find((a) => a.name === SECONDARY_APP_NAME);
     const createdSecondary = !secondaryApp;
-    if (!secondaryApp) {
-      secondaryApp = initializeApp(firebaseConfig, SECONDARY_APP_NAME);
-    }
+    if (!secondaryApp) secondaryApp = initializeApp(firebaseConfig, SECONDARY_APP_NAME);
     const secondaryAuth = getAuth(secondaryApp);
 
     try {
-      // Create Firebase Auth user with a random temporary password
       const tempPassword = Math.random().toString(36).slice(-10) + 'A1!';
       const { user: newUser } = await createUserWithEmailAndPassword(
-        secondaryAuth,
-        inviteEmail.trim(),
-        tempPassword
+        secondaryAuth, inviteEmail.trim(), tempPassword
       );
 
-      // Create Firestore user document keyed by the Firebase Auth UID
-      // so AuthContext can look it up with doc(db, 'users', firebaseUser.uid)
-      await setDoc(doc(db, 'users', newUser.uid), {
-        email: inviteEmail.trim().toLowerCase(),
-        displayName: inviteDisplayName.trim() || null,
-        role: 'PARISH_ADMIN',
-        parishId: inviteParishId,
-        status: 'invited',
-        createdAt: Timestamp.now(),
-      });
+      // Generate single-use token valid for 1 hour
+      const token = generateToken();
+      const expiresAt = Timestamp.fromDate(new Date(Date.now() + 60 * 60 * 1000));
 
-      // Send password reset email so the new admin can set their own password
-      await sendPasswordResetEmail(secondaryAuth, inviteEmail.trim());
+      await Promise.all([
+        // User doc — no parishId yet, parish admin sets up their own parish on first login
+        setDoc(doc(db, 'users', newUser.uid), {
+          email: inviteEmail.trim().toLowerCase(),
+          displayName: inviteDisplayName.trim() || null,
+          role: 'PARISH_ADMIN',
+          parishId: null,
+          status: 'invited',
+          createdAt: Timestamp.now(),
+        }),
+        // Single-use invite token stored in Firestore
+        addDoc(collection(db, 'invite_tokens'), {
+          token,
+          uid: newUser.uid,
+          email: inviteEmail.trim().toLowerCase(),
+          expiresAt,
+          used: false,
+          createdAt: Timestamp.now(),
+        }),
+        // Firebase sends branded password-reset / invite email
+        sendPasswordResetEmail(secondaryAuth, inviteEmail.trim()),
+      ]);
 
-      // Sign out from secondary instance immediately
       await secondaryAuth.signOut();
-
-      setInviteSuccess(
-        `Mwaliko umetumwa kwa ${inviteEmail.trim()}. Watapata barua pepe ya kuweka nenosiri.`
-      );
-      setInviteEmail('');
-      setInviteParishId('');
-      setInviteDisplayName('');
+      setInviteToken(token);
       await loadData();
     } catch (error: unknown) {
       let msg = 'Imeshindwa kutuma mwaliko. Tafadhali jaribu tena.';
       if (error instanceof Error) {
-        if (error.message.includes('email-already-in-use')) {
-          msg = 'Barua pepe hii tayari inatumika.';
-        } else if (error.message.includes('invalid-email')) {
-          msg = 'Barua pepe si sahihi.';
-        }
+        if (error.message.includes('email-already-in-use')) msg = 'Barua pepe hii tayari inatumika.';
+        else if (error.message.includes('invalid-email')) msg = 'Barua pepe si sahihi.';
       }
       setInviteError(msg);
     } finally {
-      // Clean up secondary app if we created it
-      if (createdSecondary && secondaryApp) {
-        await deleteApp(secondaryApp);
-      }
+      if (createdSecondary && secondaryApp) await deleteApp(secondaryApp);
       setInviting(false);
     }
+  };
+
+  const whatsappMessage = (token: string) =>
+`Habari ${inviteDisplayName || ''},
+
+Umealikwa kuwa Msimamizi wa Parokia kwenye mfumo wa *Misa Admin*.
+
+📧 Barua pepe yako: ${inviteEmail}
+🔐 Hatua 1: Angalia barua pepe yako — utapata ujumbe wa kuweka nenosiri. Bonyeza kiungo ndani yake.
+🔗 Hatua 2: Baada ya kuweka nenosiri, bonyeza kiungo hiki cha mwaliko (halali kwa saa 1 tu):
+${typeof window !== 'undefined' ? window.location.origin : 'https://misa-admin.vercel.app'}/invite/${token}
+
+⚠️ Kiungo hiki ni cha matumizi moja tu. Usikishirikishe mtu yeyote.
+
+Karibu sana kwenye familia ya Misa! 🙏`;
+
+  const copyWhatsApp = () => {
+    navigator.clipboard.writeText(whatsappMessage(inviteToken));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   const confirmAction = (admin: AdminUser, type: 'disable' | 'enable' | 'delete') => {
@@ -467,137 +466,118 @@ export default function SuperAdminsPage() {
                 </button>
               </div>
 
-              <form onSubmit={handleInvite} className="p-6 space-y-4">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Msimamizi atapata barua pepe ya kuweka nenosiri lake mwenyewe.
-                </p>
-
-                {inviteError && (
-                  <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                    <p className="text-sm text-red-600 dark:text-red-400">{inviteError}</p>
-                  </div>
-                )}
-
-                {inviteSuccess && (
-                  <div className="space-y-3">
-                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                      <p className="text-sm text-green-700 dark:text-green-400 font-medium">{inviteSuccess}</p>
-                    </div>
-                    <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-                        Ujumbe wa WhatsApp / SMS (nakili na tuma)
+              {inviteToken ? (
+                /* ── Success state ── */
+                <div className="p-6 space-y-4">
+                  <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                    <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-2xl">mark_email_read</span>
+                    <div>
+                      <p className="text-sm font-semibold text-green-700 dark:text-green-400">Mwaliko Umetumwa!</p>
+                      <p className="text-xs text-green-600 dark:text-green-500 mt-0.5">
+                        Barua pepe imetumwa kwa <span className="font-medium">{inviteEmail}</span>
                       </p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
-{`Habari ${inviteDisplayName || ''},
-
-Umealikwa kuwa Msimamizi wa Parokia kwenye mfumo wa Misa Admin.
-
-📧 Barua pepe yako: ${inviteEmail}
-🔐 Utapata barua pepe kutoka Firebase/Google — bonyeza kiungo ndani yake kuweka nenosiri lako.
-
-Baada ya kuweka nenosiri, ingia kwenye:
-🌐 misa-admin.vercel.app
-
-Karibu sana!`}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const msg = `Habari ${inviteDisplayName || ''},\n\nUmealikwa kuwa Msimamizi wa Parokia kwenye mfumo wa Misa Admin.\n\n📧 Barua pepe yako: ${inviteEmail}\n🔐 Utapata barua pepe kutoka Firebase/Google — bonyeza kiungo ndani yake kuweka nenosiri lako.\n\nBaada ya kuweka nenosiri, ingia kwenye:\n🌐 misa-admin.vercel.app\n\nKaribu sana!`;
-                          navigator.clipboard.writeText(msg);
-                        }}
-                        className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-dark transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">content_copy</span>
-                        Nakili Ujumbe
-                      </button>
                     </div>
                   </div>
-                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Barua Pepe <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    className={inputClass}
-                    placeholder="padre@parokia.com"
-                    disabled={!!inviteSuccess}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Jina Kamili
-                  </label>
-                  <input
-                    type="text"
-                    value={inviteDisplayName}
-                    onChange={(e) => setInviteDisplayName(e.target.value)}
-                    className={inputClass}
-                    placeholder="Padre Petro Makundi"
-                    disabled={!!inviteSuccess}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Parokia <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={inviteParishId}
-                    onChange={(e) => setInviteParishId(e.target.value)}
-                    className={inputClass}
-                    disabled={!!inviteSuccess}
-                  >
-                    <option value="">-- Chagua Parokia --</option>
-                    {parishes.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                        {p.diocese ? ` — ${p.diocese}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  {parishes.length === 0 && (
-                    <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1.5">
-                      Hakuna parokia iliyoandikishwa. Ongeza parokia kwanza.
+                  <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="material-symbols-outlined text-amber-600 text-[18px]">timer</span>
+                      <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+                        Kiungo halali kwa saa 1 tu — matumizi moja
+                      </p>
+                    </div>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 font-mono break-all bg-amber-100 dark:bg-amber-900/40 px-3 py-2 rounded-lg">
+                      {typeof window !== 'undefined' ? window.location.origin : 'https://misa-admin.vercel.app'}/invite/{inviteToken}
                     </p>
-                  )}
-                </div>
+                  </div>
 
-                <div className="flex gap-3 pt-2">
+                  <div className="p-4 bg-gray-50 dark:bg-gray-700/60 rounded-xl border border-gray-200 dark:border-gray-600">
+                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+                      Ujumbe wa WhatsApp / SMS
+                    </p>
+                    <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed font-sans">
+                      {whatsappMessage(inviteToken)}
+                    </pre>
+                    <button
+                      type="button"
+                      onClick={copyWhatsApp}
+                      className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-forest text-white text-xs font-semibold rounded-lg hover:bg-forest-mid transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">
+                        {copied ? 'check' : 'content_copy'}
+                      </span>
+                      {copied ? 'Imenakiliwa!' : 'Nakili Ujumbe'}
+                    </button>
+                  </div>
+
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
-                    {inviteSuccess ? 'Funga' : 'Ghairi'}
+                    Funga
                   </button>
-                  {!inviteSuccess && (
+                </div>
+              ) : (
+                /* ── Form state ── */
+                <form onSubmit={handleInvite} className="p-6 space-y-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Msimamizi atapata barua pepe ya kuweka nenosiri na kiungo cha mwaliko cha matumizi moja.
+                    Atajaza taarifa za parokia yake mwenyewe baada ya kuingia.
+                  </p>
+
+                  {inviteError && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                      <p className="text-sm text-red-600 dark:text-red-400">{inviteError}</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Barua Pepe <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email" required
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      className={inputClass}
+                      placeholder="padre@parokia.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Jina Kamili
+                    </label>
+                    <input
+                      type="text"
+                      value={inviteDisplayName}
+                      onChange={(e) => setInviteDisplayName(e.target.value)}
+                      className={inputClass}
+                      placeholder="Padre Petro Makundi"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
                     <button
-                      type="submit"
-                      disabled={inviting}
+                      type="button" onClick={closeModal}
+                      className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      Ghairi
+                    </button>
+                    <button
+                      type="submit" disabled={inviting}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors disabled:opacity-50"
                     >
                       {inviting ? (
-                        <>
-                          <span className="material-symbols-outlined animate-spin">progress_activity</span>
-                          Inatuma...
-                        </>
+                        <><span className="material-symbols-outlined animate-spin">progress_activity</span>Inatuma...</>
                       ) : (
-                        <>
-                          <span className="material-symbols-outlined">send</span>
-                          Tuma Mwaliko
-                        </>
+                        <><span className="material-symbols-outlined">send</span>Tuma Mwaliko</>
                       )}
                     </button>
-                  )}
-                </div>
-              </form>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         )}

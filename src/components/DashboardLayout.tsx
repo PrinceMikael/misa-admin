@@ -9,10 +9,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen bg-parchment dark:bg-[#0e1f17]">
+      <div className="flex h-screen overflow-hidden bg-parchment dark:bg-[#0e1f17]">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Mobile Header */}
           <header
             className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 lg:hidden"
@@ -44,7 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </header>
 
           {/* Page Content */}
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-y-auto">
             {children}
           </main>
         </div>
