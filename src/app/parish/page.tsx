@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
@@ -15,6 +15,9 @@ export default function ParishPage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
+  const [locationStatus, setLocationStatus] = useState<Parish['locationStatus']>(undefined);
+  const [locationRejectionNote, setLocationRejectionNote] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -81,6 +84,8 @@ export default function ParishPage() {
           currentSeason: data.currentSeason || '',
           seasonNote: data.seasonNote || '',
         });
+        setLocationStatus(data.locationStatus || undefined);
+        setLocationRejectionNote(data.locationRejectionNote || '');
       }
     } catch (error) {
       console.error('Error loading parish:', error);
@@ -88,6 +93,29 @@ export default function ParishPage() {
       setLoading(false);
     }
   };
+
+  const handleGetCurrentLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      alert('Kivinjari chako hakisaidii GPS. Jaza mikono.');
+      return;
+    }
+    setGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setFormData((prev) => ({
+          ...prev,
+          latitude: pos.coords.latitude.toFixed(7),
+          longitude: pos.coords.longitude.toFixed(7),
+        }));
+        setGettingLocation(false);
+      },
+      () => {
+        alert('Imeshindwa kupata eneo lako. Tafadhali ruhusu GPS au jaza mikono.');
+        setGettingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -112,16 +140,29 @@ export default function ParishPage() {
     try {
       setSaving(true);
       setSuccess(false);
+      const prevLat = parish?.location?.latitude?.toString() || '';
+      const prevLng = parish?.location?.longitude?.toString() || '';
+      const locationChanged =
+        formData.latitude !== prevLat || formData.longitude !== prevLng;
+      const newLocationStatus =
+        locationChanged && formData.latitude && formData.longitude
+          ? 'pending'
+          : locationStatus;
+
       const parishData: Record<string, unknown> = {
         name: formData.name,
         diocese: formData.diocese,
         address: formData.address,
-        location: {
-          latitude: parseFloat(formData.latitude),
-          longitude: parseFloat(formData.longitude),
-        },
         updatedAt: Timestamp.now(),
       };
+      if (formData.latitude && formData.longitude) {
+        parishData.location = {
+          latitude: parseFloat(formData.latitude),
+          longitude: parseFloat(formData.longitude),
+        };
+        parishData.locationStatus = newLocationStatus;
+        if (locationChanged) parishData.locationRejectionNote = null;
+      }
       if (formData.nameSwahili) parishData.nameSwahili = formData.nameSwahili;
       if (formData.region) parishData.region = formData.region;
       if (formData.deanery) parishData.deanery = formData.deanery;
@@ -256,20 +297,88 @@ export default function ParishPage() {
 
             {/* Location */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Mahali</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Tumia Google Maps kupata latitude na longitude za parokia yako.
+              <div className="flex items-start justify-between mb-1">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Mahali pa Kanisa</h2>
+                {locationStatus === 'approved' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                    <span className="material-symbols-outlined text-[14px]">verified</span>
+                    Imeidhinishwa
+                  </span>
+                )}
+                {locationStatus === 'pending' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                    <span className="material-symbols-outlined text-[14px]">schedule</span>
+                    Inasubiri Idhini
+                  </span>
+                )}
+                {locationStatus === 'rejected' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                    <span className="material-symbols-outlined text-[14px]">cancel</span>
+                    Imekataliwa
+                  </span>
+                )}
+              </div>
+
+              {locationStatus === 'rejected' && locationRejectionNote && (
+                <div className="mt-2 mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                  <p className="text-sm text-red-700 dark:text-red-400">
+                    <span className="font-medium">Sababu ya kukataliwa:</span> {locationRejectionNote}
+                  </p>
+                </div>
+              )}
+
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 mb-4">
+                Bonyeza "Pata Eneo Langu" ukiwa kanisani, au jaza mikono. Mabadiliko yatatumwa kwa msimamizi mkuu kwa idhini.
               </p>
+
+              {/* GPS button */}
+              <button
+                type="button"
+                onClick={handleGetCurrentLocation}
+                disabled={gettingLocation}
+                className="mb-4 inline-flex items-center gap-2 px-4 py-2.5 bg-forest text-white text-sm font-medium rounded-lg hover:bg-forest-mid transition-colors disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  {gettingLocation ? 'progress_activity' : 'my_location'}
+                </span>
+                {gettingLocation ? 'Inatafuta eneo...' : 'Pata Eneo Langu (GPS)'}
+              </button>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Latitude <span className="text-red-500">*</span></label>
-                  <input type="number" step="any" required value={formData.latitude} onChange={e => setFormData({...formData, latitude: e.target.value})} className={inputClass} placeholder="-6.7617" />
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Latitude</label>
+                  <input
+                    type="number" step="any"
+                    value={formData.latitude}
+                    onChange={e => setFormData({...formData, latitude: e.target.value})}
+                    className={inputClass}
+                    placeholder="-6.7617"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Longitude <span className="text-red-500">*</span></label>
-                  <input type="number" step="any" required value={formData.longitude} onChange={e => setFormData({...formData, longitude: e.target.value})} className={inputClass} placeholder="39.2634" />
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Longitude</label>
+                  <input
+                    type="number" step="any"
+                    value={formData.longitude}
+                    onChange={e => setFormData({...formData, longitude: e.target.value})}
+                    className={inputClass}
+                    placeholder="39.2634"
+                  />
                 </div>
               </div>
+
+              {/* Live preview link */}
+              {formData.latitude && formData.longitude && (
+                <a
+                  href={`https://www.google.com/maps?q=${formData.latitude},${formData.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center gap-1.5 text-sm text-[#c4933f] hover:underline font-medium"
+                >
+                  <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                  Thibitisha eneo kwenye Google Maps
+                </a>
+              )}
             </div>
 
             {/* Contact */}

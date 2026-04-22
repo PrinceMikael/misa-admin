@@ -81,11 +81,11 @@ export default function LoginPage() {
         <div className="relative z-10 max-w-xs">
           <div className="text-[#c4933f] text-6xl leading-none mb-4 opacity-60" style={{ fontFamily: 'Georgia, serif' }}>"</div>
           <p className="text-white/80 text-xl leading-relaxed" style={{ fontFamily: 'var(--font-cormorant)', fontStyle: 'italic' }}>
-            Amkeni, mshangilie Bwana, Mungu wenu, kwa kila wakati na wakati wote.
+            Shangilileni katika Bwana, enyi wenye haki; sifa zinampendeza watu wanyoofu.
           </p>
           <div className="mt-6 h-px" style={{ background: 'linear-gradient(90deg, #c4933f, transparent)', opacity: 0.5 }} />
           <p className="mt-3 text-[#4d7a63] text-xs uppercase tracking-widest font-medium">
-            Zaburi 33 · Tanzania
+            Zaburi 33:1 · Biblia Takatifu
           </p>
         </div>
 

@@ -22,10 +22,12 @@ export interface Parish {
   officeHours?: string;
   mpesaTillNumber?: string;
   mpesaAmount?: number;
-  location: {
+  location?: {
     latitude: number;
     longitude: number;
   };
+  locationStatus?: 'pending' | 'approved' | 'rejected';
+  locationRejectionNote?: string;
   phone?: string;
   email?: string;
   imageUrl?: string;

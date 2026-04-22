@@ -479,8 +479,39 @@ export default function SuperAdminsPage() {
                 )}
 
                 {inviteSuccess && (
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <p className="text-sm text-green-600 dark:text-green-400">{inviteSuccess}</p>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                      <p className="text-sm text-green-700 dark:text-green-400 font-medium">{inviteSuccess}</p>
+                    </div>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                        Ujumbe wa WhatsApp / SMS (nakili na tuma)
+                      </p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
+{`Habari ${inviteDisplayName || ''},
+
+Umealikwa kuwa Msimamizi wa Parokia kwenye mfumo wa Misa Admin.
+
+📧 Barua pepe yako: ${inviteEmail}
+🔐 Utapata barua pepe kutoka Firebase/Google — bonyeza kiungo ndani yake kuweka nenosiri lako.
+
+Baada ya kuweka nenosiri, ingia kwenye:
+🌐 misa-admin.vercel.app
+
+Karibu sana!`}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const msg = `Habari ${inviteDisplayName || ''},\n\nUmealikwa kuwa Msimamizi wa Parokia kwenye mfumo wa Misa Admin.\n\n📧 Barua pepe yako: ${inviteEmail}\n🔐 Utapata barua pepe kutoka Firebase/Google — bonyeza kiungo ndani yake kuweka nenosiri lako.\n\nBaada ya kuweka nenosiri, ingia kwenye:\n🌐 misa-admin.vercel.app\n\nKaribu sana!`;
+                          navigator.clipboard.writeText(msg);
+                        }}
+                        className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary-dark transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">content_copy</span>
+                        Nakili Ujumbe
+                      </button>
+                    </div>
                   </div>
                 )}
 

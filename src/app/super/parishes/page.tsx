@@ -11,6 +11,7 @@ import {
   Timestamp,
   orderBy,
   query,
+  where,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -45,6 +46,10 @@ export default function SuperParishesPage() {
 
   const [deleteTarget, setDeleteTarget] = useState<Parish | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [locationTarget, setLocationTarget] = useState<Parish | null>(null);
+  const [locationAction, setLocationAction] = useState<'approve' | 'reject' | null>(null);
+  const [rejectionNote, setRejectionNote] = useState('');
+  const [processingLocation, setProcessingLocation] = useState(false);
 
   const [search, setSearch] = useState('');
 
@@ -155,6 +160,35 @@ export default function SuperParishesPage() {
       alert('Imeshindwa kufuta. Tafadhali jaribu tena.');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleLocationAction = async () => {
+    if (!locationTarget || !locationAction) return;
+    try {
+      setProcessingLocation(true);
+      if (locationAction === 'approve') {
+        await updateDoc(doc(db, 'parishes', locationTarget.id), {
+          locationStatus: 'approved',
+          locationRejectionNote: null,
+          updatedAt: Timestamp.now(),
+        });
+      } else {
+        await updateDoc(doc(db, 'parishes', locationTarget.id), {
+          locationStatus: 'rejected',
+          locationRejectionNote: rejectionNote.trim() || 'Eneo halijakubaliwa.',
+          updatedAt: Timestamp.now(),
+        });
+      }
+      setLocationTarget(null);
+      setLocationAction(null);
+      setRejectionNote('');
+      await loadParishes();
+    } catch (err) {
+      console.error(err);
+      alert('Imeshindwa. Tafadhali jaribu tena.');
+    } finally {
+      setProcessingLocation(false);
     }
   };
 
@@ -285,6 +319,30 @@ export default function SuperParishesPage() {
                       )}
                     </div>
 
+                    {/* Location status badge */}
+                    {parish.locationStatus && (
+                      <div className="mt-3 flex items-center gap-2">
+                        {parish.locationStatus === 'pending' && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+                            <span className="material-symbols-outlined text-[12px]">schedule</span>
+                            Eneo Linasubiri Idhini
+                          </span>
+                        )}
+                        {parish.locationStatus === 'approved' && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                            <span className="material-symbols-outlined text-[12px]">verified</span>
+                            Eneo Limeidhinishwa
+                          </span>
+                        )}
+                        {parish.locationStatus === 'rejected' && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                            <span className="material-symbols-outlined text-[12px]">cancel</span>
+                            Eneo Limekataliwa
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     {/* Parish ID chip */}
                     <div className="mt-3">
                       <span className="inline-block px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs font-mono rounded">
@@ -292,6 +350,40 @@ export default function SuperParishesPage() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Location approval actions */}
+                  {parish.locationStatus === 'pending' && parish.location && (
+                    <div className="mx-0 px-0 pt-2 pb-1">
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 mb-2">
+                        <p className="text-xs font-medium text-yellow-800 dark:text-yellow-300 mb-1">Eneo jipya lililotumwa:</p>
+                        <a
+                          href={`https://www.google.com/maps?q=${parish.location.latitude},${parish.location.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                        >
+                          <span className="material-symbols-outlined text-[12px]">open_in_new</span>
+                          {parish.location.latitude.toFixed(5)}, {parish.location.longitude.toFixed(5)}
+                        </a>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { setLocationTarget(parish); setLocationAction('approve'); }}
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 rounded-lg transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                          Idhinisha
+                        </button>
+                        <button
+                          onClick={() => { setLocationTarget(parish); setLocationAction('reject'); }}
+                          className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 rounded-lg transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">cancel</span>
+                          Kataa
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Actions */}
                   <div className="flex gap-2 pt-1 border-t border-gray-100 dark:border-gray-700">
@@ -525,6 +617,64 @@ export default function SuperParishesPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Location Approve / Reject Modal */}
+        {locationTarget && locationAction && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
+              <div className={`flex items-center justify-center w-14 h-14 rounded-full mx-auto mb-4 ${
+                locationAction === 'approve' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
+              }`}>
+                <span className={`material-symbols-outlined text-3xl ${
+                  locationAction === 'approve' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                }`}>
+                  {locationAction === 'approve' ? 'verified' : 'cancel'}
+                </span>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white text-center">
+                {locationAction === 'approve' ? 'Idhinisha Eneo?' : 'Kataa Eneo?'}
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-1 mb-4">
+                <span className="font-semibold text-gray-700 dark:text-gray-300">{locationTarget.name}</span>
+              </p>
+              {locationAction === 'reject' && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Sababu ya kukataa (hiari)
+                  </label>
+                  <input
+                    type="text"
+                    value={rejectionNote}
+                    onChange={(e) => setRejectionNote(e.target.value)}
+                    placeholder="Mf: Eneo halikuwa sahihi, jaribu tena."
+                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setLocationTarget(null); setLocationAction(null); setRejectionNote(''); }}
+                  disabled={processingLocation}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Ghairi
+                </button>
+                <button
+                  onClick={handleLocationAction}
+                  disabled={processingLocation}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white font-medium rounded-lg transition-colors disabled:opacity-50 ${
+                    locationAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {processingLocation
+                    ? <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
+                    : locationAction === 'approve' ? 'Ndio, Idhinisha' : 'Ndio, Kataa'
+                  }
+                </button>
+              </div>
             </div>
           </div>
         )}
