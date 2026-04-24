@@ -142,8 +142,8 @@ export default function IntentionsPage() {
                 <span className="hidden sm:inline">{tab.label}</span>
                 <span className="sm:hidden">{tab.shortLabel}</span>
                 {count > 0 && (
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-                    active ? 'bg-white/20 text-white' : 'bg-[#f0ead8] dark:bg-[#1a2e23] text-ash'
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-4.5 text-center ${
+                    active ? 'bg-white/20 text-white' : 'bg-parchment-deep dark:bg-[#1a2e23] text-ash'
                   }`}>
                     {count}
                   </span>
@@ -212,12 +212,12 @@ export default function IntentionsPage() {
                     {/* Meta tags */}
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       {intention.intentionType && (
-                        <span className="text-[10px] font-semibold bg-[#f0ead8] dark:bg-[#1a2e23] text-ash dark:text-[#6b9080] px-2 py-0.5 rounded">
+                        <span className="text-[10px] font-semibold bg-parchment-deep dark:bg-[#1a2e23] text-ash dark:text-[#6b9080] px-2 py-0.5 rounded">
                           {INTENTION_TYPE_LABELS[intention.intentionType] ?? intention.intentionType}
                         </span>
                       )}
                       {intention.beneficiaryName && (
-                        <span className="text-[10px] bg-[#f0ead8] dark:bg-[#1a2e23] text-ash px-2 py-0.5 rounded">
+                        <span className="text-[10px] bg-parchment-deep dark:bg-[#1a2e23] text-ash px-2 py-0.5 rounded">
                           Mnufaika: {intention.beneficiaryName}
                         </span>
                       )}
@@ -240,7 +240,7 @@ export default function IntentionsPage() {
 
                     {/* Notes */}
                     {intention.note && (
-                      <div className="bg-[#faf7f0] dark:bg-[#1a2e23] border border-[#e8e3d8] dark:border-[#253d2e] rounded-lg px-3 py-2 mb-2">
+                      <div className="bg-parchment dark:bg-[#1a2e23] border border-[#e8e3d8] dark:border-[#253d2e] rounded-lg px-3 py-2 mb-2">
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-ash mb-1">Maelezo ya mtumaji</p>
                         <p className="text-sm text-ink-soft dark:text-[#c0bdb6]">{intention.note}</p>
                       </div>

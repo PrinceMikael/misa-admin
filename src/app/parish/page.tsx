@@ -98,7 +98,8 @@ export default function ParishPage() {
       setUploading(true);
       const storageRef = ref(storage, `parishes/${userData.parishId}/${Date.now()}_${file.name}`);
       await uploadBytes(storageRef, file);
-      setFormData(prev => ({ ...prev, imageUrl: await getDownloadURL(storageRef) }));
+      const downloadURL = await getDownloadURL(storageRef);
+      setFormData(prev => ({ ...prev, imageUrl: downloadURL }));
     } catch (error) {
       console.error('Error uploading image:', error);
       alert('Imeshindwa kupakia picha. Tafadhali jaribu tena.');
@@ -207,7 +208,7 @@ export default function ParishPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
 
             {success && (
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-[#d1fae5] dark:bg-[#065f46]/20 border border-[#10b981]/30">
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-primary-light dark:bg-[#065f46]/20 border border-[#10b981]/30">
                 <span className="material-symbols-outlined text-[#10b981] text-[20px]">check_circle</span>
                 <p className="text-sm font-medium text-[#065f46] dark:text-[#34d399]">
                   Taarifa za parokia zimehifadhiwa!
@@ -291,7 +292,7 @@ export default function ParishPage() {
               {/* Status badge */}
               {locationStatus && (
                 <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold mb-4 ${
-                  locationStatus === 'approved' ? 'bg-[#d1fae5] dark:bg-[#065f46]/20 text-[#065f46] dark:text-[#34d399]' :
+                  locationStatus === 'approved' ? 'bg-primary-light dark:bg-[#065f46]/20 text-[#065f46] dark:text-[#34d399]' :
                   locationStatus === 'pending'  ? 'bg-[#fef3c7] dark:bg-[#92400e]/20 text-[#92400e] dark:text-[#fbbf24]' :
                   'bg-[#fee2e2] dark:bg-[#991b1b]/20 text-[#991b1b] dark:text-[#f87171]'
                 }`}>

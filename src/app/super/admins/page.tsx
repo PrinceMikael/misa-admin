@@ -318,7 +318,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                         <tr key={admin.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                                 <span className="material-symbols-outlined text-primary text-lg">person</span>
                               </div>
                               <div>
@@ -391,7 +391,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                     <div key={admin.id} className="p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                             <span className="material-symbols-outlined text-primary">person</span>
                           </div>
                           <div className="min-w-0">
@@ -409,7 +409,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                           </div>
                         </div>
                         <span
-                          className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                          className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${
                             STATUS_STYLES[status] || STATUS_STYLES.active
                           }`}
                         >

@@ -367,7 +367,7 @@ export default function SchedulesPage() {
                       <div key={schedule.id} className="flex items-center gap-3 px-4 sm:px-5 py-3.5 hover:bg-parchment/50 dark:hover:bg-[#1a2e23]/50 transition-colors">
                         {/* Time block */}
                         <div
-                          className="w-[3.5rem] shrink-0 text-center"
+                          className="w-14 shrink-0 text-center"
                           style={{ fontFamily: 'var(--font-cormorant)' }}
                         >
                           {schedule.timeLabel && (
