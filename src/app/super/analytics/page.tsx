@@ -30,34 +30,41 @@ interface Stats {
 }
 
 const INTENTION_STATUSES = ['pending', 'approved', 'completed', 'rejected', 'flagged'];
-const ADMIN_STATUSES = ['active', 'invited', 'disabled'];
 
 const INTENTION_LABELS: Record<string, string> = {
-  pending: 'Zinasubiri',
-  approved: 'Zilizoidhinishwa',
+  pending:   'Zinasubiri',
+  approved:  'Zilizoidhinishwa',
   completed: 'Zilizokamilika',
-  rejected: 'Zilizokataliwa',
-  flagged: 'Zenye Alama',
+  rejected:  'Zilizokataliwa',
+  flagged:   'Zenye Alama',
 };
 
-const INTENTION_COLORS: Record<string, string> = {
-  pending: 'bg-yellow-400',
-  approved: 'bg-green-500',
-  completed: 'bg-blue-500',
-  rejected: 'bg-red-500',
-  flagged: 'bg-orange-500',
+const INTENTION_BAR: Record<string, string> = {
+  pending:   'bg-[#f59e0b]',
+  approved:  'bg-[#10b981]',
+  completed: 'bg-[#3b82f6]',
+  rejected:  'bg-[#ef4444]',
+  flagged:   'bg-[#f97316]',
 };
+
+const ADMIN_STATUSES = ['active', 'invited', 'disabled'];
 
 const ADMIN_STATUS_LABELS: Record<string, string> = {
-  active: 'Wanaohusika',
-  invited: 'Waliobiriwa',
+  active:   'Wanaohusika',
+  invited:  'Waliobiriwa',
   disabled: 'Waliozuiwa',
 };
 
-const ADMIN_STATUS_COLORS: Record<string, string> = {
-  active: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20',
-  invited: 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20',
-  disabled: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20',
+const ADMIN_BAR: Record<string, string> = {
+  active:   'bg-[#10b981]',
+  invited:  'bg-[#f59e0b]',
+  disabled: 'bg-[#ef4444]',
+};
+
+const ADMIN_BADGE: Record<string, string> = {
+  active:   'bg-[#d1fae5] dark:bg-[#065f46]/20 text-[#065f46] dark:text-[#34d399]',
+  invited:  'bg-[#fef3c7] dark:bg-[#92400e]/20 text-[#92400e] dark:text-[#fbbf24]',
+  disabled: 'bg-[#fee2e2] dark:bg-[#991b1b]/20 text-[#991b1b] dark:text-[#f87171]',
 };
 
 export default function SuperAnalyticsPage() {
@@ -78,65 +85,52 @@ export default function SuperAnalyticsPage() {
         getDocs(collection(db, 'mass_schedules')),
       ]);
 
-      const parishes = parishSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as Parish[];
+      const parishes = parishSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Parish[];
       const admins = adminSnap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
+        .map(d => ({ id: d.id, ...d.data() }))
         .filter((u: Record<string, unknown>) => u.role === 'PARISH_ADMIN') as User[];
 
-      // Group intentions by status and parishId
       const intentionsByStatus: Record<string, number> = {};
       const intentionsByParish: Record<string, number> = {};
       const pendingByParish: Record<string, number> = {};
 
-      intentionSnap.docs.forEach((d) => {
+      intentionSnap.docs.forEach(d => {
         const data = d.data();
         const status = data.status || 'pending';
         intentionsByStatus[status] = (intentionsByStatus[status] || 0) + 1;
         intentionsByParish[data.parishId] = (intentionsByParish[data.parishId] || 0) + 1;
-        if (status === 'pending') {
-          pendingByParish[data.parishId] = (pendingByParish[data.parishId] || 0) + 1;
-        }
+        if (status === 'pending') pendingByParish[data.parishId] = (pendingByParish[data.parishId] || 0) + 1;
       });
 
-      // Group notices and schedules by parishId
       const noticesByParish: Record<string, number> = {};
-      noticeSnap.docs.forEach((d) => {
+      noticeSnap.docs.forEach(d => {
         const pid = d.data().parishId;
         noticesByParish[pid] = (noticesByParish[pid] || 0) + 1;
       });
 
       const schedulesByParish: Record<string, number> = {};
-      scheduleSnap.docs.forEach((d) => {
+      scheduleSnap.docs.forEach(d => {
         const pid = d.data().parishId;
         schedulesByParish[pid] = (schedulesByParish[pid] || 0) + 1;
       });
 
-      // Admin by status
       const adminsByStatus: Record<string, number> = {};
-      admins.forEach((a) => {
+      admins.forEach(a => {
         const s = (a.status as string) || 'active';
         adminsByStatus[s] = (adminsByStatus[s] || 0) + 1;
       });
 
-      // Admin email → name map
       const adminByParish = new Map<string, string>();
-      admins.forEach((a) => {
-        if (a.parishId) adminByParish.set(a.parishId, a.displayName || a.email);
-      });
+      admins.forEach(a => { if (a.parishId) adminByParish.set(a.parishId, a.displayName || a.email); });
 
-      // Build per-parish stats
-      const parishStats: ParishStats[] = parishes.map((p) => ({
-        id: p.id,
-        name: p.name,
-        diocese: p.diocese,
+      const parishStats: ParishStats[] = parishes.map(p => ({
+        id: p.id, name: p.name, diocese: p.diocese,
         adminName: adminByParish.get(p.id),
         intentions: intentionsByParish[p.id] || 0,
         pendingIntentions: pendingByParish[p.id] || 0,
         notices: noticesByParish[p.id] || 0,
         schedules: schedulesByParish[p.id] || 0,
       }));
-
-      // Sort by total intentions desc
       parishStats.sort((a, b) => b.intentions - a.intentions);
 
       setStats({
@@ -167,116 +161,93 @@ export default function SuperAnalyticsPage() {
   return (
     <SuperAdminRoute>
       <DashboardLayout>
-        <div className="p-4 sm:p-6 lg:p-8">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
+
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-start justify-between gap-4 mb-6 anim-fade-up">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+              <h1
+                className="text-4xl sm:text-5xl font-semibold leading-none text-[#1a3d2e] dark:text-[#e8e3d8]"
+                style={{ fontFamily: 'var(--font-cormorant)' }}
+              >
                 Takwimu za Mfumo
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-sm text-ash dark:text-[#6b9080] mt-2">
                 Muhtasari wa parokia zote
               </p>
+              <hr className="gold-rule mt-4 max-w-20" />
             </div>
             <button
               onClick={() => loadStats(true)}
               disabled={refreshing}
-              className="inline-flex items-center gap-2 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#e8e3d8] dark:border-[#253d2e] text-ash dark:text-[#6b9080] text-sm font-medium hover:border-[#c4933f] hover:text-[#1a3d2e] dark:hover:text-[#e8e3d8] transition-all disabled:opacity-50 shrink-0"
             >
-              <span className={`material-symbols-outlined ${refreshing ? 'animate-spin' : ''}`}>
-                refresh
-              </span>
-              Sasisha
+              <span className={`material-symbols-outlined text-[18px] ${refreshing ? 'animate-spin' : ''}`}>refresh</span>
+              <span className="hidden sm:inline">Sasisha</span>
             </button>
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="relative">
-                <div className="w-12 h-12 border-4 border-gray-200 dark:border-gray-700 rounded-full" />
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0 left-0" />
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+              <div className="relative w-9 h-9">
+                <div className="absolute inset-0 rounded-full border-2 border-[#c4933f]/20" />
+                <div className="absolute inset-0 rounded-full border-2 border-[#c4933f] border-t-transparent animate-spin" />
               </div>
+              <p className="text-sm text-ash italic" style={{ fontFamily: 'var(--font-cormorant)' }}>Inapakia…</p>
             </div>
           ) : stats ? (
-            <div className="space-y-6">
+            <div className="space-y-5">
 
-              {/* Top stat cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Stat band */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {[
-                  {
-                    label: 'Parokia',
-                    value: stats.totalParishes,
-                    icon: 'location_city',
-                    color: 'text-primary bg-primary/10',
-                  },
-                  {
-                    label: 'Wasimamizi',
-                    value: stats.totalAdmins,
-                    icon: 'manage_accounts',
-                    color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30',
-                  },
-                  {
-                    label: 'Nia Zote',
-                    value: totalIntentions,
-                    icon: 'assignment',
-                    color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30',
-                  },
-                  {
-                    label: 'Matangazo',
-                    value: stats.totalNotices,
-                    icon: 'campaign',
-                    color: 'text-orange-600 bg-orange-100 dark:bg-orange-900/30',
-                  },
-                ].map((card) => (
-                  <div
-                    key={card.label}
-                    className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 flex items-center gap-4"
-                  >
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${card.color}`}>
-                      <span className="material-symbols-outlined text-2xl">{card.icon}</span>
+                  { label: 'Parokia',     value: stats.totalParishes,  icon: 'location_city' },
+                  { label: 'Wasimamizi',  value: stats.totalAdmins,    icon: 'manage_accounts' },
+                  { label: 'Nia Zote',    value: totalIntentions,       icon: 'assignment' },
+                  { label: 'Matangazo',   value: stats.totalNotices,   icon: 'campaign' },
+                ].map((card, i) => (
+                  <div key={card.label} className={`card stat-card p-4 sm:p-5 anim-fade-up anim-delay-${i + 1}`}>
+                    <div className="flex items-start justify-between mb-3">
+                      <span className="material-symbols-outlined text-[20px] text-[#6b9080]">{card.icon}</span>
                     </div>
-                    <div>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {card.value}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{card.label}</p>
-                    </div>
+                    <p
+                      className="text-3xl sm:text-4xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] leading-none mb-1"
+                      style={{ fontFamily: 'var(--font-cormorant)' }}
+                    >
+                      {card.value}
+                    </p>
+                    <p className="text-[11px] text-ash dark:text-[#4d7a63] font-medium uppercase tracking-wide">{card.label}</p>
                   </div>
                 ))}
               </div>
 
-              {/* Middle row: Admin status + Intention breakdown */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Admin status + Intention breakdown */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
 
                 {/* Admin status */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                <div className="card p-5 sm:p-6">
+                  <h2 className="text-xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] mb-1" style={{ fontFamily: 'var(--font-cormorant)' }}>
                     Hali ya Wasimamizi
                   </h2>
-                  <div className="space-y-3">
-                    {ADMIN_STATUSES.map((s) => {
+                  <hr className="gold-rule my-3" />
+                  <div className="space-y-4">
+                    {ADMIN_STATUSES.map(s => {
                       const count = stats.adminsByStatus[s] || 0;
                       const pct = stats.totalAdmins > 0 ? Math.round((count / stats.totalAdmins) * 100) : 0;
                       return (
                         <div key={s}>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className={`text-sm font-medium px-2 py-0.5 rounded ${ADMIN_STATUS_COLORS[s]}`}>
+                          <div className="flex justify-between items-center mb-1.5">
+                            <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded ${ADMIN_BADGE[s]}`}>
                               {ADMIN_STATUS_LABELS[s]}
                             </span>
-                            <span className="text-sm font-bold text-gray-900 dark:text-white">
+                            <span className="text-sm font-bold text-ink dark:text-[#e8e3d8]">
                               {count}
-                              <span className="text-xs font-normal text-gray-400 ml-1">({pct}%)</span>
+                              <span className="text-[11px] font-normal text-ash ml-1">({pct}%)</span>
                             </span>
                           </div>
-                          <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div className="h-1.5 bg-parchment-deep dark:bg-[#1a2e23] rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full transition-all ${
-                                s === 'active'
-                                  ? 'bg-green-500'
-                                  : s === 'invited'
-                                  ? 'bg-yellow-400'
-                                  : 'bg-red-500'
-                              }`}
+                              className={`h-full rounded-full transition-all ${ADMIN_BAR[s]}`}
                               style={{ width: `${pct}%` }}
                             />
                           </div>
@@ -286,32 +257,33 @@ export default function SuperAnalyticsPage() {
                   </div>
                 </div>
 
-                {/* Intention status breakdown */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                    Nia za Misa kwa Hali
+                {/* Intention breakdown */}
+                <div className="card p-5 sm:p-6">
+                  <h2 className="text-xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] mb-1" style={{ fontFamily: 'var(--font-cormorant)' }}>
+                    Nia kwa Hali
                   </h2>
+                  <hr className="gold-rule my-3" />
                   {totalIntentions === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Bado hakuna nia zilizowasilishwa.</p>
+                    <p className="text-sm text-ash italic" style={{ fontFamily: 'var(--font-cormorant)' }}>
+                      Bado hakuna nia zilizowasilishwa.
+                    </p>
                   ) : (
-                    <div className="space-y-3">
-                      {INTENTION_STATUSES.map((s) => {
+                    <div className="space-y-4">
+                      {INTENTION_STATUSES.map(s => {
                         const count = stats.intentionsByStatus[s] || 0;
                         const pct = totalIntentions > 0 ? Math.round((count / totalIntentions) * 100) : 0;
                         return (
                           <div key={s}>
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-sm text-gray-700 dark:text-gray-300">
-                                {INTENTION_LABELS[s]}
-                              </span>
-                              <span className="text-sm font-bold text-gray-900 dark:text-white">
+                            <div className="flex justify-between items-center mb-1.5">
+                              <span className="text-sm text-ink-soft dark:text-[#c0bdb6]">{INTENTION_LABELS[s]}</span>
+                              <span className="text-sm font-bold text-ink dark:text-[#e8e3d8]">
                                 {count}
-                                <span className="text-xs font-normal text-gray-400 ml-1">({pct}%)</span>
+                                <span className="text-[11px] font-normal text-ash ml-1">({pct}%)</span>
                               </span>
                             </div>
-                            <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div className="h-1.5 bg-parchment-deep dark:bg-[#1a2e23] rounded-full overflow-hidden">
                               <div
-                                className={`h-full rounded-full transition-all ${INTENTION_COLORS[s]}`}
+                                className={`h-full rounded-full transition-all ${INTENTION_BAR[s]}`}
                                 style={{ width: `${pct}%` }}
                               />
                             </div>
@@ -323,64 +295,66 @@ export default function SuperAnalyticsPage() {
                 </div>
               </div>
 
-              {/* Per-parish activity table */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+              {/* Per-parish table */}
+              <div className="card overflow-hidden">
+                <div className="px-5 sm:px-6 py-4 flex items-center justify-between border-b border-[#e8e3d8] dark:border-[#253d2e]">
+                  <h2 className="text-xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8]" style={{ fontFamily: 'var(--font-cormorant)' }}>
                     Shughuli kwa Parokia
                   </h2>
+                  <span className="text-[11px] text-ash font-medium">{stats.parishStats.length} parokia</span>
                 </div>
 
                 {stats.parishStats.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">
+                  <div className="flex flex-col items-center justify-center py-14 text-center px-6">
+                    <span className="material-symbols-outlined text-4xl text-ash-light dark:text-[#2e4a38] mb-3">location_city</span>
+                    <p className="text-ash italic" style={{ fontFamily: 'var(--font-cormorant)' }}>
                       Bado hakuna parokia iliyoandikishwa.
                     </p>
                   </div>
                 ) : (
                   <>
-                    {/* Desktop */}
+                    {/* Desktop table */}
                     <div className="hidden sm:block overflow-x-auto">
                       <table className="w-full">
                         <thead>
-                          <tr className="border-b border-gray-100 dark:border-gray-700">
-                            <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Parokia</th>
-                            <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Msimamizi</th>
-                            <th className="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Nia Zote</th>
-                            <th className="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">Zinasubiri</th>
-                            <th className="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Matangazo</th>
-                            <th className="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Ratiba</th>
+                          <tr className="border-b border-[#e8e3d8] dark:border-[#253d2e]">
+                            {['Parokia', 'Msimamizi', 'Nia Zote', 'Zinasubiri', 'Matangazo', 'Ratiba'].map((h, i) => (
+                              <th
+                                key={h}
+                                className={`px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-ash dark:text-[#4d7a63] ${i >= 2 ? 'text-center' : 'text-left'} ${i === 3 ? 'text-[#c4933f]' : ''}`}
+                              >
+                                {h}
+                              </th>
+                            ))}
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                          {stats.parishStats.map((p) => (
-                            <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                              <td className="px-6 py-4">
-                                <p className="font-medium text-gray-900 dark:text-white text-sm">{p.name}</p>
-                                {p.diocese && (
-                                  <p className="text-xs text-gray-500 dark:text-gray-400">{p.diocese}</p>
-                                )}
+                        <tbody className="divide-y divide-[#e8e3d8] dark:divide-[#253d2e]">
+                          {stats.parishStats.map(p => (
+                            <tr key={p.id} className="hover:bg-parchment/40 dark:hover:bg-[#1a2e23]/40 transition-colors">
+                              <td className="px-5 py-3.5">
+                                <p className="text-sm font-medium text-ink dark:text-[#e8e3d8]">{p.name}</p>
+                                {p.diocese && <p className="text-[11px] text-ash mt-0.5">{p.diocese}</p>}
                               </td>
-                              <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                                {p.adminName || <span className="text-gray-400 dark:text-gray-500 italic">Hana msimamizi</span>}
+                              <td className="px-5 py-3.5 text-sm text-ash dark:text-[#6b9080]">
+                                {p.adminName || <span className="italic">Hana msimamizi</span>}
                               </td>
-                              <td className="px-6 py-4 text-center">
-                                <span className="font-semibold text-gray-900 dark:text-white">{p.intentions}</span>
+                              <td className="px-5 py-3.5 text-center">
+                                <span className="text-sm font-semibold text-ink dark:text-[#e8e3d8]">{p.intentions}</span>
                               </td>
-                              <td className="px-6 py-4 text-center">
+                              <td className="px-5 py-3.5 text-center">
                                 {p.pendingIntentions > 0 ? (
-                                  <span className="inline-flex items-center justify-center min-w-6 px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 text-sm font-bold rounded-full">
+                                  <span className="inline-flex items-center justify-center min-w-6 px-2 py-0.5 bg-[#fef3c7] dark:bg-[#92400e]/20 text-[#92400e] dark:text-[#fbbf24] text-[11px] font-bold rounded-full">
                                     {p.pendingIntentions}
                                   </span>
                                 ) : (
-                                  <span className="text-gray-400">—</span>
+                                  <span className="text-ash-light">—</span>
                                 )}
                               </td>
-                              <td className="px-6 py-4 text-center">
-                                <span className="font-semibold text-gray-900 dark:text-white">{p.notices}</span>
+                              <td className="px-5 py-3.5 text-center">
+                                <span className="text-sm font-semibold text-ink dark:text-[#e8e3d8]">{p.notices}</span>
                               </td>
-                              <td className="px-6 py-4 text-center">
-                                <span className="font-semibold text-gray-900 dark:text-white">{p.schedules}</span>
+                              <td className="px-5 py-3.5 text-center">
+                                <span className="text-sm font-semibold text-ink dark:text-[#e8e3d8]">{p.schedules}</span>
                               </td>
                             </tr>
                           ))}
@@ -388,32 +362,32 @@ export default function SuperAnalyticsPage() {
                       </table>
                     </div>
 
-                    {/* Mobile */}
-                    <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
-                      {stats.parishStats.map((p) => (
+                    {/* Mobile cards */}
+                    <div className="sm:hidden divide-y divide-[#e8e3d8] dark:divide-[#253d2e]">
+                      {stats.parishStats.map(p => (
                         <div key={p.id} className="px-4 py-4">
-                          <p className="font-medium text-gray-900 dark:text-white">{p.name}</p>
-                          {p.diocese && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{p.diocese}</p>
-                          )}
-                          <div className="grid grid-cols-3 gap-2 mt-2">
+                          <p className="text-sm font-semibold text-ink dark:text-[#e8e3d8]">{p.name}</p>
+                          {p.diocese && <p className="text-[11px] text-ash mb-2">{p.diocese}</p>}
+                          {p.adminName && <p className="text-[11px] text-ash dark:text-[#6b9080] mb-3">{p.adminName}</p>}
+                          <div className="grid grid-cols-4 gap-2">
                             {[
-                              { label: 'Nia', value: p.intentions },
-                              { label: 'Zinasubiri', value: p.pendingIntentions, highlight: p.pendingIntentions > 0 },
-                              { label: 'Matangazo', value: p.notices },
-                            ].map((item) => (
+                              { label: 'Nia',       value: p.intentions,        highlight: false },
+                              { label: 'Subiri',    value: p.pendingIntentions, highlight: p.pendingIntentions > 0 },
+                              { label: 'Matangazo', value: p.notices,           highlight: false },
+                              { label: 'Ratiba',    value: p.schedules,         highlight: false },
+                            ].map(item => (
                               <div
                                 key={item.label}
                                 className={`text-center p-2 rounded-lg ${
-                                  item.highlight
-                                    ? 'bg-yellow-50 dark:bg-yellow-900/20'
-                                    : 'bg-gray-50 dark:bg-gray-700'
+                                  item.highlight ? 'bg-[#fef3c7] dark:bg-[#92400e]/20' : 'bg-parchment dark:bg-[#1a2e23]'
                                 }`}
                               >
-                                <p className={`text-lg font-bold ${item.highlight ? 'text-yellow-700 dark:text-yellow-300' : 'text-gray-900 dark:text-white'}`}>
+                                <p className={`text-lg font-bold leading-none ${
+                                  item.highlight ? 'text-[#92400e] dark:text-[#fbbf24]' : 'text-ink dark:text-[#e8e3d8]'
+                                }`} style={{ fontFamily: 'var(--font-cormorant)' }}>
                                   {item.value}
                                 </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{item.label}</p>
+                                <p className="text-[9px] font-semibold uppercase tracking-wide text-ash mt-1">{item.label}</p>
                               </div>
                             ))}
                           </div>
@@ -423,15 +397,15 @@ export default function SuperAnalyticsPage() {
                   </>
                 )}
               </div>
-
             </div>
           ) : (
-            <div className="text-center py-20">
-              <p className="text-gray-500 dark:text-gray-400">Imeshindwa kupakia takwimu.</p>
-              <button
-                onClick={() => loadStats()}
-                className="mt-3 text-primary underline text-sm"
-              >
+            <div className="card flex flex-col items-center justify-center py-16 text-center">
+              <span className="material-symbols-outlined text-4xl text-ash-light dark:text-[#2e4a38] mb-3">bar_chart</span>
+              <p className="text-ash italic mb-4" style={{ fontFamily: 'var(--font-cormorant)' }}>
+                Imeshindwa kupakia takwimu.
+              </p>
+              <button onClick={() => loadStats()} className="btn-gold">
+                <span className="material-symbols-outlined text-[18px]">refresh</span>
                 Jaribu tena
               </button>
             </div>

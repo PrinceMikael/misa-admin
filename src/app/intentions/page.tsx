@@ -9,28 +9,45 @@ import { MassIntention } from '@/types';
 import { format } from 'date-fns';
 
 const INTENTION_TYPE_LABELS: Record<string, string> = {
-  thanksgiving: 'Shukrani',
+  thanksgiving:   'Shukrani',
   repose_of_soul: 'Pumziko la Roho',
-  healing: 'Uponyaji',
-  special: 'Nia Maalum',
-  birthday: 'Siku ya Kuzaliwa',
-  anniversary: 'Maadhimisho',
-  safe_travel: 'Safari Salama',
+  healing:        'Uponyaji',
+  special:        'Nia Maalum',
+  birthday:       'Siku ya Kuzaliwa',
+  anniversary:    'Maadhimisho',
+  safe_travel:    'Safari Salama',
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: 'Inasubiri',
-  approved: 'Imeidhinishwa',
+  pending:   'Inasubiri',
+  approved:  'Imeidhinishwa',
   completed: 'Imekamilika',
-  rejected: 'Imekataliwa',
-  flagged: 'Imeripotiwa',
+  rejected:  'Imekataliwa',
+  flagged:   'Imeripotiwa',
 };
+
+const STATUS_DOT: Record<string, string> = {
+  pending:   'bg-[#f59e0b]',
+  approved:  'bg-[#10b981]',
+  completed: 'bg-[#3b82f6]',
+  flagged:   'bg-[#f97316]',
+  rejected:  'bg-ash-light',
+};
+
+const TABS = [
+  { key: 'all'       as const, label: 'Zote',          shortLabel: 'Zote',   icon: 'list' },
+  { key: 'pending'   as const, label: 'Zinasubiri',     shortLabel: 'Subiri', icon: 'pending' },
+  { key: 'approved'  as const, label: 'Zimeidhinishwa', shortLabel: 'Idhin.', icon: 'check_circle' },
+  { key: 'completed' as const, label: 'Zimekamilika',   shortLabel: 'Kamili', icon: 'done_all' },
+  { key: 'rejected'  as const, label: 'Zimekataliwa',   shortLabel: 'Kataa',  icon: 'cancel' },
+  { key: 'flagged'   as const, label: 'Zimeripotiwa',   shortLabel: 'Ripoti', icon: 'flag' },
+];
 
 export default function IntentionsPage() {
   const { userData } = useAuth();
   const [intentions, setIntentions] = useState<MassIntention[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'completed' | 'rejected' | 'flagged'>('all');
+  const [filter, setFilter] = useState<typeof TABS[number]['key']>('all');
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -65,10 +82,7 @@ export default function IntentionsPage() {
 
   const handleStatusChange = async (id: string, newStatus: MassIntention['status']) => {
     try {
-      const updateData: Record<string, unknown> = {
-        status: newStatus,
-        updatedAt: Timestamp.now(),
-      };
+      const updateData: Record<string, unknown> = { status: newStatus, updatedAt: Timestamp.now() };
       const notes = adminNotes[id];
       if (notes?.trim()) updateData.adminNotes = notes.trim();
       await updateDoc(doc(db, 'mass_intentions', id), updateData);
@@ -83,222 +97,196 @@ export default function IntentionsPage() {
   const filteredIntentions = filter === 'all' ? intentions : intentions.filter(i => i.status === filter);
 
   const statusCounts = {
-    all: intentions.length,
-    pending: intentions.filter(i => i.status === 'pending').length,
-    approved: intentions.filter(i => i.status === 'approved').length,
+    all:       intentions.length,
+    pending:   intentions.filter(i => i.status === 'pending').length,
+    approved:  intentions.filter(i => i.status === 'approved').length,
     completed: intentions.filter(i => i.status === 'completed').length,
-    rejected: intentions.filter(i => i.status === 'rejected').length,
-    flagged: intentions.filter(i => i.status === 'flagged').length,
+    rejected:  intentions.filter(i => i.status === 'rejected').length,
+    flagged:   intentions.filter(i => i.status === 'flagged').length,
   };
-
-  const tabs = [
-    { key: 'all' as const, label: 'Zote', icon: 'list' },
-    { key: 'pending' as const, label: 'Zinasubiri', icon: 'pending' },
-    { key: 'approved' as const, label: 'Zimeidhinishwa', icon: 'check_circle' },
-    { key: 'completed' as const, label: 'Zimekamilika', icon: 'done_all' },
-    { key: 'rejected' as const, label: 'Zimekataliwa', icon: 'cancel' },
-    { key: 'flagged' as const, label: 'Zimeripotiwa', icon: 'flag' },
-  ];
 
   return (
     <DashboardLayout>
-      <div className="p-4 sm:p-6 lg:p-8">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1">Nia za Misa</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+
+        {/* Header */}
+        <div className="mb-6 anim-fade-up">
+          <h1
+            className="text-4xl sm:text-5xl font-semibold leading-none text-[#1a3d2e] dark:text-[#e8e3d8]"
+            style={{ fontFamily: 'var(--font-cormorant)' }}
+          >
+            Nia za Misa
+          </h1>
+          <p className="text-sm text-ash dark:text-[#6b9080] mt-2">
             Tazama na simamia nia za Misa zilizotumwa na waumini
           </p>
+          <hr className="gold-rule mt-4 max-w-20" />
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-          {tabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                filter === tab.key
-                  ? 'bg-primary text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
-            >
-              <span className="material-symbols-outlined text-xl">{tab.icon}</span>
-              <span>{tab.label}</span>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                filter === tab.key ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700'
-              }`}>
-                {statusCounts[tab.key]}
-              </span>
-            </button>
-          ))}
+        {/* Filter tabs — scroll on mobile, full on sm+ */}
+        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 anim-fade-up anim-delay-1">
+          {TABS.map(tab => {
+            const active = filter === tab.key;
+            const count = statusCounts[tab.key];
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setFilter(tab.key)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl font-medium whitespace-nowrap text-[12px] transition-all shrink-0 ${
+                  active
+                    ? 'bg-[#1a3d2e] text-white shadow-sm'
+                    : 'bg-white dark:bg-[#17291f] text-ash dark:text-[#6b9080] border border-[#e8e3d8] dark:border-[#253d2e] hover:border-[#c4933f] hover:text-[#1a3d2e] dark:hover:text-[#e8e3d8]'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[15px]">{tab.icon}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.shortLabel}</span>
+                {count > 0 && (
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                    active ? 'bg-white/20 text-white' : 'bg-[#f0ead8] dark:bg-[#1a2e23] text-ash'
+                  }`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Intentions List */}
+        {/* Content */}
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="relative">
-              <div className="w-12 h-12 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
-              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <div className="relative w-9 h-9">
+              <div className="absolute inset-0 rounded-full border-2 border-[#c4933f]/20" />
+              <div className="absolute inset-0 rounded-full border-2 border-[#c4933f] border-t-transparent animate-spin" />
             </div>
+            <p className="text-sm text-ash italic" style={{ fontFamily: 'var(--font-cormorant)' }}>Inapakia…</p>
           </div>
         ) : filteredIntentions.length === 0 ? (
-          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-            <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4 block">assignment</span>
-            <p className="text-gray-600 dark:text-gray-400">
+          <div className="card flex flex-col items-center justify-center py-16 text-center">
+            <span className="material-symbols-outlined text-4xl text-ash-light dark:text-[#2e4a38] mb-3">assignment</span>
+            <p className="text-ash italic" style={{ fontFamily: 'var(--font-cormorant)' }}>
               {filter === 'all' ? 'Hakuna nia za Misa bado' : `Hakuna nia ${STATUS_LABELS[filter]?.toLowerCase() ?? filter}`}
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {filteredIntentions.map(intention => (
-              <div
-                key={intention.id}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
-              >
-                <div className="flex flex-col sm:flex-row items-start gap-4">
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 ${
-                    intention.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/20' :
-                    intention.status === 'approved' ? 'bg-green-100 dark:bg-green-900/20' :
-                    intention.status === 'completed' ? 'bg-blue-100 dark:bg-blue-900/20' :
-                    intention.status === 'flagged' ? 'bg-orange-100 dark:bg-orange-900/20' :
-                    'bg-red-100 dark:bg-red-900/20'
-                  }`}>
-                    <span className={`material-symbols-outlined text-2xl ${
-                      intention.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' :
-                      intention.status === 'approved' ? 'text-green-600 dark:text-green-400' :
-                      intention.status === 'completed' ? 'text-blue-600 dark:text-blue-400' :
-                      intention.status === 'flagged' ? 'text-orange-600 dark:text-orange-400' :
-                      'text-red-600 dark:text-red-400'
-                    }`}>
-                      {intention.status === 'pending' ? 'pending' :
-                       intention.status === 'approved' ? 'check_circle' :
-                       intention.status === 'completed' ? 'done_all' :
-                       intention.status === 'flagged' ? 'flag' : 'cancel'}
-                    </span>
+              <div key={intention.id} className="card p-4 sm:p-5 anim-fade-up">
+                <div className="flex items-start gap-3">
+                  {/* Status dot */}
+                  <div className="mt-1.5 shrink-0">
+                    <span className={`block w-2 h-2 rounded-full ${STATUS_DOT[intention.status] ?? 'bg-ash-light'}`} />
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-2 gap-2">
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {format(intention.createdAt, 'PPpp')}
-                        </p>
+                    {/* Top row: meta + badge */}
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0">
                         {intention.submittedByName && (
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            Kutoka: {intention.submittedByName}
+                          <p className="text-sm font-semibold text-ink dark:text-[#e8e3d8] truncate">
+                            {intention.submittedByName}
                           </p>
                         )}
-                        {intention.submittedByPhone && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Simu: {intention.submittedByPhone}
-                          </p>
-                        )}
-                        {intention.submittedByEmail && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Barua pepe: {intention.submittedByEmail}
-                          </p>
-                        )}
+                        <p className="text-[11px] text-ash dark:text-[#5a8070] mt-0.5">
+                          {format(intention.createdAt, 'dd MMM yyyy · HH:mm')}
+                          {intention.submittedByPhone && ` · ${intention.submittedByPhone}`}
+                        </p>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold shrink-0 ${
-                        intention.status === 'pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400' :
-                        intention.status === 'approved' ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400' :
-                        intention.status === 'completed' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' :
-                        intention.status === 'flagged' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400' :
-                        'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                      <span className={`shrink-0 px-2 py-0.5 rounded text-[10px] font-semibold ${
+                        intention.status === 'pending'   ? 'badge-pending' :
+                        intention.status === 'approved'  ? 'badge-approved' :
+                        intention.status === 'flagged'   ? 'badge-flagged' : 'badge-rejected'
                       }`}>
                         {STATUS_LABELS[intention.status] ?? intention.status}
                       </span>
                     </div>
 
                     {/* Intention text */}
-                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-3">
-                      <p className="text-gray-900 dark:text-white whitespace-pre-wrap">
+                    <div className="bg-parchment dark:bg-[#1a2e23] rounded-lg px-4 py-3 mb-3">
+                      <p className="text-sm text-ink dark:text-[#e8e3d8] leading-relaxed whitespace-pre-wrap">
                         {intention.intentionText}
                       </p>
                     </div>
 
-                    {/* Meta badges */}
-                    <div className="flex flex-wrap gap-2 mb-3">
+                    {/* Meta tags */}
+                    <div className="flex flex-wrap gap-1.5 mb-3">
                       {intention.intentionType && (
-                        <span className="text-xs font-semibold bg-primary/10 text-primary px-2.5 py-1 rounded-full">
+                        <span className="text-[10px] font-semibold bg-[#f0ead8] dark:bg-[#1a2e23] text-ash dark:text-[#6b9080] px-2 py-0.5 rounded">
                           {INTENTION_TYPE_LABELS[intention.intentionType] ?? intention.intentionType}
                         </span>
                       )}
                       {intention.beneficiaryName && (
-                        <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2.5 py-1 rounded-full">
+                        <span className="text-[10px] bg-[#f0ead8] dark:bg-[#1a2e23] text-ash px-2 py-0.5 rounded">
                           Mnufaika: {intention.beneficiaryName}
                         </span>
                       )}
                       {intention.mpesaConfirmationCode && (
-                        <span className="text-xs font-mono bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 px-2.5 py-1 rounded-full">
+                        <span className="text-[10px] font-mono bg-parchment-deep dark:bg-[#1a2e23] text-ash px-2 py-0.5 rounded border border-[#e8e3d8] dark:border-[#253d2e]">
                           M-Pesa: {intention.mpesaConfirmationCode}
                         </span>
                       )}
                       {intention.mpesaAmount != null && (
-                        <span className="text-xs bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-2.5 py-1 rounded-full">
+                        <span className="text-[10px] bg-parchment-deep dark:bg-[#1a2e23] text-[#065f46] dark:text-[#34d399] px-2 py-0.5 rounded">
                           TZS {intention.mpesaAmount.toLocaleString()}
                         </span>
                       )}
                       {intention.preferredDate && (
-                        <span className="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 px-2.5 py-1 rounded-full">
+                        <span className="text-[10px] bg-parchment-deep dark:bg-[#1a2e23] text-ash px-2 py-0.5 rounded">
                           Tarehe: {format(intention.preferredDate, 'dd/MM/yyyy')}
                         </span>
                       )}
                     </div>
 
-                    {/* Note from submitter */}
+                    {/* Notes */}
                     {intention.note && (
-                      <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 mb-3">
-                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Maelezo ya mtumaji:</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300">{intention.note}</p>
+                      <div className="bg-[#faf7f0] dark:bg-[#1a2e23] border border-[#e8e3d8] dark:border-[#253d2e] rounded-lg px-3 py-2 mb-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-ash mb-1">Maelezo ya mtumaji</p>
+                        <p className="text-sm text-ink-soft dark:text-[#c0bdb6]">{intention.note}</p>
                       </div>
                     )}
-
-                    {/* Admin notes */}
                     {intention.adminNotes && (
-                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 mb-3">
-                        <p className="text-xs font-medium text-blue-900 dark:text-blue-300 mb-1">Maelezo ya msimamizi:</p>
-                        <p className="text-sm text-blue-800 dark:text-blue-200">{intention.adminNotes}</p>
+                      <div className="bg-parchment-deep dark:bg-[#1a2e23] border border-[#c4933f]/30 rounded-lg px-3 py-2 mb-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-[#c4933f] mb-1">Maelezo ya msimamizi</p>
+                        <p className="text-sm text-ink-soft dark:text-[#c0bdb6]">{intention.adminNotes}</p>
                       </div>
                     )}
 
-                    {/* Admin notes input */}
+                    {/* Admin note input */}
                     {(intention.status === 'pending' || intention.status === 'flagged') && (
-                      <div className="mb-3">
-                        <input
-                          type="text"
-                          placeholder="Ongeza maelezo ya msimamizi (hiari)..."
-                          value={adminNotes[intention.id] ?? ''}
-                          onChange={e => setAdminNotes(prev => ({ ...prev, [intention.id]: e.target.value }))}
-                          className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        placeholder="Ongeza maelezo ya msimamizi (hiari)…"
+                        value={adminNotes[intention.id] ?? ''}
+                        onChange={e => setAdminNotes(prev => ({ ...prev, [intention.id]: e.target.value }))}
+                        className="input-illuminated mb-3 text-sm"
+                      />
                     )}
 
-                    {/* Action buttons */}
+                    {/* Actions */}
                     <div className="flex flex-wrap gap-2">
                       {(intention.status === 'pending' || intention.status === 'flagged') && (
                         <>
                           <button
                             onClick={() => handleStatusChange(intention.id, 'approved')}
-                            className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#10b981] hover:bg-[#059669] text-white text-[12px] font-semibold rounded-lg transition-colors"
                           >
-                            <span className="material-symbols-outlined text-sm">check</span>
+                            <span className="material-symbols-outlined text-[14px]">check</span>
                             Idhinisha
                           </button>
                           <button
                             onClick={() => handleStatusChange(intention.id, 'rejected')}
-                            className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#ef4444] hover:bg-[#dc2626] text-white text-[12px] font-semibold rounded-lg transition-colors"
                           >
-                            <span className="material-symbols-outlined text-sm">close</span>
+                            <span className="material-symbols-outlined text-[14px]">close</span>
                             Kataa
                           </button>
                           {intention.status !== 'flagged' && (
                             <button
                               onClick={() => handleStatusChange(intention.id, 'flagged')}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition-colors"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f97316] hover:bg-[#ea6c0a] text-white text-[12px] font-semibold rounded-lg transition-colors"
                             >
-                              <span className="material-symbols-outlined text-sm">flag</span>
+                              <span className="material-symbols-outlined text-[14px]">flag</span>
                               Ripoti
                             </button>
                           )}
@@ -307,19 +295,19 @@ export default function IntentionsPage() {
                       {intention.status === 'approved' && (
                         <button
                           onClick={() => handleStatusChange(intention.id, 'completed')}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3b82f6] hover:bg-[#2563eb] text-white text-[12px] font-semibold rounded-lg transition-colors"
                         >
-                          <span className="material-symbols-outlined text-sm">done_all</span>
+                          <span className="material-symbols-outlined text-[14px]">done_all</span>
                           Kamilisha
                         </button>
                       )}
                       {intention.status !== 'pending' && (
                         <button
                           onClick={() => handleStatusChange(intention.id, 'pending')}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-ash dark:text-[#6b9080] border border-[#e8e3d8] dark:border-[#253d2e] hover:border-[#c4933f] text-[12px] font-medium rounded-lg transition-colors"
                         >
-                          <span className="material-symbols-outlined text-sm">undo</span>
-                          Rudisha Inasubiri
+                          <span className="material-symbols-outlined text-[14px]">undo</span>
+                          Rudisha
                         </button>
                       )}
                     </div>
