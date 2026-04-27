@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { collection, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -12,6 +12,14 @@ export default function OnboardingPage() {
   const { userData, user } = useAuth();
   const router = useRouter();
   const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    if (!userData) return;
+    // Super admins never go through parish onboarding
+    if (userData.role === 'SUPER_ADMIN') { router.replace('/super/analytics'); return; }
+    // Already set up — go to dashboard
+    if (userData.parishId) { router.replace('/dashboard'); return; }
+  }, [userData, router]);
   const [saving, setSaving] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
 
@@ -87,8 +95,8 @@ export default function OnboardingPage() {
     return true;
   };
 
-  const inputCls = "w-full px-4 py-3 bg-[#faf7f0] border border-[#d4cfc4] rounded-lg text-[#1c1a17] text-sm focus:outline-none focus:border-[#c4933f] focus:ring-2 focus:ring-[#c4933f]/15 transition-all placeholder:text-[#c4bfb4]";
-  const labelCls = "block text-xs font-semibold uppercase tracking-widest text-[#8a8479] mb-2";
+  const inputCls = "w-full px-4 py-3 bg-parchment border border-[#d4cfc4] rounded-lg text-ink text-sm focus:outline-none focus:border-[#c4933f] focus:ring-2 focus:ring-[#c4933f]/15 transition-all placeholder:text-ash-light";
+  const labelCls = "block text-xs font-semibold uppercase tracking-widest text-ash mb-2";
 
   return (
     <div
@@ -146,7 +154,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 flex flex-col overflow-y-auto bg-[#faf7f0]">
+      <div className="flex-1 flex flex-col overflow-y-auto bg-parchment">
         {/* Mobile header */}
         <div className="lg:hidden flex items-center gap-3 px-6 py-4 border-b border-[#e8e3d8]">
           <div
@@ -156,7 +164,7 @@ export default function OnboardingPage() {
           <span className="text-[#1a3d2e] font-semibold" style={{ fontFamily: 'var(--font-cormorant)', fontSize: '1.1rem' }}>
             Misa Admin
           </span>
-          <span className="ml-auto text-xs text-[#8a8479]">Hatua {step + 1}/{STEPS.length}</span>
+          <span className="ml-auto text-xs text-ash">Hatua {step + 1}/{STEPS.length}</span>
         </div>
 
         <div className="flex-1 flex items-start justify-center p-6 sm:p-10 lg:p-14">
@@ -171,10 +179,10 @@ export default function OnboardingPage() {
                   Karibu, {userData?.displayName?.split(' ')[0] || 'Padre'}!
                 </h1>
                 <div className="h-px mb-6" style={{ background: 'linear-gradient(90deg, #c4933f, transparent)', opacity: 0.5, maxWidth: 80 }} />
-                <p className="text-[#8a8479] leading-relaxed mb-4">
+                <p className="text-ash leading-relaxed mb-4">
                   Umealikwa kuwa Msimamizi wa Parokia kwenye mfumo wa <strong className="text-[#1a3d2e]">Misa Admin</strong>.
                 </p>
-                <p className="text-[#8a8479] leading-relaxed mb-8">
+                <p className="text-ash leading-relaxed mb-8">
                   Hatua chache zinaendelea kukusaidia kusanidi parokia yako. Itachukua dakika 2–3 tu. Anza ukiwa tayari.
                 </p>
                 <div className="p-4 rounded-xl border border-[#e8e3d8] bg-white mb-8">
@@ -182,7 +190,7 @@ export default function OnboardingPage() {
                     <span className="material-symbols-outlined text-[#c4933f] text-xl mt-0.5">info</span>
                     <div>
                       <p className="text-sm font-semibold text-[#1a3d2e] mb-1">Utahitaji nini:</p>
-                      <ul className="text-sm text-[#8a8479] space-y-1">
+                      <ul className="text-sm text-ash space-y-1">
                         <li>• Jina kamili la parokia</li>
                         <li>• Jimbo (Diocese) ambalo parokia iko</li>
                         <li>• Anwani ya parokia</li>
@@ -248,7 +256,7 @@ export default function OnboardingPage() {
                   Mahali pa Kanisa
                 </h1>
                 <div className="h-px mb-4" style={{ background: 'linear-gradient(90deg, #c4933f, transparent)', opacity: 0.5, maxWidth: 80 }} />
-                <p className="text-sm text-[#8a8479] mb-6 leading-relaxed">
+                <p className="text-sm text-ash mb-6 leading-relaxed">
                   Ukiwa kanisani sasa hivi, bonyeza "Pata Eneo Langu" — simu yako itajaza coordinates otomatiki.
                   Kama kanisa lako lipo kwenye Google Maps, unaweza pia kupata coordinates kutoka hapo.
                   Hatua hii ni ya hiari — unaweza kuruka na kuijaza baadaye.
@@ -310,7 +318,7 @@ export default function OnboardingPage() {
                   Mawasiliano
                 </h1>
                 <div className="h-px mb-4" style={{ background: 'linear-gradient(90deg, #c4933f, transparent)', opacity: 0.5, maxWidth: 80 }} />
-                <p className="text-sm text-[#8a8479] mb-6">Hizi ni za hiari — unaweza kuruka na kuzijaza baadaye kwenye ukurasa wa Taarifa za Parokia.</p>
+                <p className="text-sm text-ash mb-6">Hizi ni za hiari — unaweza kuruka na kuzijaza baadaye kwenye ukurasa wa Taarifa za Parokia.</p>
 
                 <div className="space-y-5">
                   <div>
@@ -329,12 +337,12 @@ export default function OnboardingPage() {
                   <p className="text-sm font-semibold text-[#1a3d2e] mb-3" style={{ fontFamily: 'var(--font-cormorant)', fontSize: '1.1rem' }}>
                     Muhtasari wa Parokia Yako
                   </p>
-                  <div className="space-y-2 text-sm text-[#8a8479]">
-                    <p><span className="font-medium text-[#1c1a17]">Jina:</span> {form.name}</p>
-                    <p><span className="font-medium text-[#1c1a17]">Jimbo:</span> {form.diocese}</p>
-                    <p><span className="font-medium text-[#1c1a17]">Anwani:</span> {form.address}</p>
-                    {form.priestName && <p><span className="font-medium text-[#1c1a17]">Padre:</span> {form.priestName}</p>}
-                    {form.latitude && <p><span className="font-medium text-[#1c1a17]">Eneo:</span> {parseFloat(form.latitude).toFixed(4)}, {parseFloat(form.longitude).toFixed(4)}</p>}
+                  <div className="space-y-2 text-sm text-ash">
+                    <p><span className="font-medium text-ink">Jina:</span> {form.name}</p>
+                    <p><span className="font-medium text-ink">Jimbo:</span> {form.diocese}</p>
+                    <p><span className="font-medium text-ink">Anwani:</span> {form.address}</p>
+                    {form.priestName && <p><span className="font-medium text-ink">Padre:</span> {form.priestName}</p>}
+                    {form.latitude && <p><span className="font-medium text-ink">Eneo:</span> {parseFloat(form.latitude).toFixed(4)}, {parseFloat(form.longitude).toFixed(4)}</p>}
                   </div>
                 </div>
               </div>
@@ -345,7 +353,7 @@ export default function OnboardingPage() {
               {step > 0 && (
                 <button
                   onClick={() => setStep(s => s - 1)}
-                  className="flex items-center gap-2 px-5 py-3 rounded-xl border border-[#d4cfc4] text-[#8a8479] text-sm font-medium hover:border-[#c4933f] hover:text-[#c4933f] transition-all"
+                  className="flex items-center gap-2 px-5 py-3 rounded-xl border border-[#d4cfc4] text-ash text-sm font-medium hover:border-[#c4933f] hover:text-[#c4933f] transition-all"
                 >
                   <span className="material-symbols-outlined text-[18px]">arrow_back</span>
                   Rudi

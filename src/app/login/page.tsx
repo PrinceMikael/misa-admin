@@ -1,20 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
   const { signIn, user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const rawReturn = searchParams.get('returnTo') ?? '';
+  // Only allow internal paths to prevent open redirect
+  const returnTo = rawReturn.startsWith('/') ? rawReturn : '/dashboard';
 
   useEffect(() => {
-    if (user) router.push('/dashboard');
-  }, [user, router]);
+    if (user) router.push(returnTo);
+  }, [user, router, returnTo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +27,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signIn(email, password);
-      router.push('/dashboard');
+      router.push(returnTo);
     } catch {
       setError('Barua pepe au nenosiri si sahihi. Tafadhali jaribu tena.');
     } finally {
@@ -37,7 +42,6 @@ export default function LoginPage() {
         className="hidden lg:flex lg:w-[42%] xl:w-[45%] flex-col justify-between p-12 relative overflow-hidden grain"
         style={{ background: 'linear-gradient(160deg, #1a3d2e 0%, #0e2418 100%)' }}
       >
-        {/* Large decorative cross */}
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 select-none pointer-events-none"
           style={{
@@ -52,7 +56,6 @@ export default function LoginPage() {
           ✝
         </div>
 
-        {/* Top ornament */}
         <div className="relative z-10">
           <div className="flex items-center gap-3">
             <div
@@ -77,7 +80,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Center quote */}
         <div className="relative z-10 max-w-xs">
           <div className="text-[#c4933f] text-6xl leading-none mb-4 opacity-60" style={{ fontFamily: 'Georgia, serif' }}>"</div>
           <p className="text-white/80 text-xl leading-relaxed" style={{ fontFamily: 'var(--font-cormorant)', fontStyle: 'italic' }}>
@@ -89,7 +91,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Bottom */}
         <div className="relative z-10">
           <p className="text-[#4d7a63] text-xs">© 2024 Misa — Haki zote zimehifadhiwa</p>
         </div>
@@ -116,7 +117,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Heading */}
           <div className="mb-8 anim-fade-up">
             <h1
               className="text-4xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] mb-2 leading-tight"
@@ -129,7 +129,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5 anim-fade-up anim-delay-1">
             {error && (
               <div className="flex items-start gap-3 p-4 rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900/40">
@@ -185,7 +184,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Divider */}
           <div className="my-8 anim-fade-up anim-delay-2">
             <hr className="gold-rule" />
           </div>
@@ -196,5 +194,13 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

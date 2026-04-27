@@ -56,7 +56,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           href={item.href}
           onClick={onClose}
           className={`
-            relative group flex items-center gap-3 px-3 py-2.5 rounded-xl
+            relative group flex items-center gap-2.5 px-3 py-2 rounded-xl
             text-[13px] font-medium transition-all duration-150
             ${isActive
               ? 'bg-white/10 text-white'
@@ -65,18 +65,16 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           `}
         >
           {isActive && (
-            <span className="absolute left-0 inset-y-2.5 w-[3px] rounded-r-full bg-[#c4933f]" />
+            <span className="absolute left-0 inset-y-2 w-0.75 rounded-r-full bg-[#c4933f]" />
           )}
-          <span
-            className={`material-symbols-outlined text-[18px] shrink-0 transition-colors ${
-              isActive ? 'text-[#c4933f]' : 'text-[#4d7a63] group-hover:text-[#9db8a8]'
-            }`}
-          >
+          <span className={`material-symbols-outlined text-[17px] shrink-0 transition-colors ${
+            isActive ? 'text-[#c4933f]' : 'text-[#4d7a63] group-hover:text-[#9db8a8]'
+          }`}>
             {item.icon}
           </span>
           <span className="flex-1 truncate">{item.label}</span>
           {showBadge && (
-            <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[9px] font-bold bg-[#c4933f] text-white shrink-0">
+            <span className="inline-flex items-center justify-center min-w-4.5 h-4.5 px-1 rounded-full text-[9px] font-bold bg-[#c4933f] text-white shrink-0">
               {pendingCount > 99 ? '99+' : pendingCount}
             </span>
           )}
@@ -94,10 +92,11 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         />
       )}
 
+      {/* Always fixed — content area uses lg:ml-64 to compensate on desktop */}
       <aside
         className={`
-          grain fixed lg:sticky top-0 left-0 z-50 lg:z-auto
-          flex flex-col h-screen w-[260px] shrink-0
+          grain fixed top-0 left-0 z-50
+          flex flex-col h-screen w-64
           transition-transform duration-250 ease-in-out
           lg:translate-x-0
           ${open ? 'translate-x-0' : '-translate-x-full'}
@@ -106,14 +105,14 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       >
 
         {/* ── Brand ── */}
-        <div className="flex items-center gap-3 px-5 pt-6 pb-5 shrink-0">
+        <div className="flex items-center gap-3 px-4 pt-5 pb-4 shrink-0">
           <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
             style={{
               background: 'linear-gradient(135deg, #c4933f, #e2b96a)',
               color: '#1a3d2e',
               fontFamily: 'var(--font-cormorant)',
-              fontSize: '0.9375rem',
+              fontSize: '0.875rem',
               fontWeight: 700,
               letterSpacing: '0.04em',
             }}
@@ -123,21 +122,21 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           <div className="min-w-0">
             <p
               className="text-white font-semibold leading-none"
-              style={{ fontFamily: 'var(--font-cormorant)', fontSize: '1.0625rem', letterSpacing: '0.01em' }}
+              style={{ fontFamily: 'var(--font-cormorant)', fontSize: '1rem', letterSpacing: '0.01em' }}
             >
               Misa Admin
             </p>
-            <p className="text-[#3d6650] text-[10px] font-bold uppercase tracking-[0.18em] mt-[5px]">
+            <p className="text-[#3d6650] text-[9px] font-bold uppercase tracking-[0.18em] mt-1">
               Usimamizi
             </p>
           </div>
         </div>
 
-        <div className="mx-5 shrink-0"><hr className="gold-rule" /></div>
+        <div className="mx-4 shrink-0"><hr className="gold-rule" /></div>
 
         {/* ── Navigation ── */}
-        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-4">
-          <p className="px-3 mb-2.5 text-[9px] font-bold uppercase tracking-[0.2em] text-[#3a5e4a]">
+        <nav className="flex-1 min-h-0 overflow-y-auto px-2.5 py-3">
+          <p className="px-3 mb-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-[#3a5e4a]">
             Parokia
           </p>
           <ul className="space-y-0.5">
@@ -148,8 +147,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
           {isSuperAdmin && (
             <>
-              <div className="mx-2 mt-5 mb-4"><hr className="gold-rule" /></div>
-              <p className="px-3 mb-2.5 text-[9px] font-bold uppercase tracking-[0.2em] text-[#c4933f]/70">
+              <div className="mx-2 mt-3 mb-3"><hr className="gold-rule" /></div>
+              <p className="px-3 mb-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-[#c4933f]/70">
                 Msimamizi Mkuu
               </p>
               <ul className="space-y-0.5">
@@ -162,13 +161,13 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         </nav>
 
         {/* ── Bottom ── */}
-        <div className="shrink-0 px-5 pb-5">
-          <hr className="gold-rule mb-4" />
+        <div className="shrink-0 px-4 pb-4">
+          <hr className="gold-rule mb-3" />
 
           {userData && (
-            <div className="flex items-center gap-2.5 px-1 mb-3">
+            <div className="flex items-center gap-2 px-1 mb-2">
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-bold"
+                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-bold"
                 style={{
                   background: 'rgba(196,147,63,0.15)',
                   color: '#c4933f',
@@ -179,7 +178,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                 {initials}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[#e8e3d8] text-[13px] font-medium truncate leading-tight">
+                <p className="text-[#e8e3d8] text-[12px] font-medium truncate leading-tight">
                   {userData.displayName || userData.email}
                 </p>
                 <span className={`text-[9px] font-bold uppercase tracking-[0.14em] ${
@@ -194,18 +193,18 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           <div className="space-y-0.5">
             <button
               onClick={toggleTheme}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#6b9080] hover:text-white hover:bg-white/7 text-[13px] font-medium transition-all"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[#6b9080] hover:text-white hover:bg-white/7 text-[12px] font-medium transition-all"
             >
-              <span className="material-symbols-outlined text-[17px] shrink-0">
+              <span className="material-symbols-outlined text-[16px] shrink-0">
                 {theme === 'dark' ? 'light_mode' : 'dark_mode'}
               </span>
               {theme === 'dark' ? 'Mwanga' : 'Giza'}
             </button>
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#6b9080] hover:text-[#f87171] hover:bg-red-500/8 text-[13px] font-medium transition-all"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[#6b9080] hover:text-[#f87171] hover:bg-red-500/8 text-[12px] font-medium transition-all"
             >
-              <span className="material-symbols-outlined text-[17px] shrink-0">logout</span>
+              <span className="material-symbols-outlined text-[16px] shrink-0">logout</span>
               Toka
             </button>
           </div>

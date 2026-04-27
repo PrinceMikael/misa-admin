@@ -10,6 +10,7 @@ import {
   doc,
   query,
   orderBy,
+  where,
   Timestamp,
   addDoc,
 } from 'firebase/firestore';
@@ -23,7 +24,7 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
 } from 'firebase/auth';
-import { db, firebaseConfig } from '@/lib/firebase';
+import { db, auth, firebaseConfig } from '@/lib/firebase';
 import DashboardLayout from '@/components/DashboardLayout';
 import SuperAdminRoute from '@/components/SuperAdminRoute';
 import { User } from '@/types';
@@ -37,14 +38,14 @@ function generateToken(): string {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  active: 'Amiri',
-  invited: 'Amealikwa',
+  active:   'Amiri',
+  invited:  'Amealikwa',
   disabled: 'Amezuiwa',
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  invited: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  active:   'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  invited:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
   disabled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
 };
 
@@ -52,7 +53,8 @@ export default function SuperAdminsPage() {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [showModal, setShowModal] = useState(false);
+  // ── Invite state ──
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteDisplayName, setInviteDisplayName] = useState('');
@@ -60,6 +62,13 @@ export default function SuperAdminsPage() {
   const [inviteToken, setInviteToken] = useState('');
   const [copied, setCopied] = useState(false);
 
+  // ── Resend state ──
+  const [resendTarget, setResendTarget] = useState<AdminUser | null>(null);
+  const [resending, setResending] = useState(false);
+  const [resendToken, setResendToken] = useState('');
+  const [resendCopied, setResendCopied] = useState(false);
+
+  // ── Action state ──
   const [actionTarget, setActionTarget] = useState<AdminUser | null>(null);
   const [actionType, setActionType] = useState<'disable' | 'enable' | 'delete' | null>(null);
   const [actioning, setActioning] = useState(false);
@@ -69,16 +78,25 @@ export default function SuperAdminsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const adminSnap = await getDocs(collection(db, 'users'));
+      const [adminSnap, parishSnap] = await Promise.all([
+        getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc'))),
+        getDocs(collection(db, 'parishes')),
+      ]);
+
+      const parishMap: Record<string, string> = {};
+      parishSnap.docs.forEach(d => { parishMap[d.id] = d.data().name; });
+
       const adminList = adminSnap.docs
-        .filter((d) => d.data().role === 'PARISH_ADMIN')
-        .map((d) => ({
+        .filter(d => d.data().role === 'PARISH_ADMIN')
+        .map(d => ({
           id: d.id,
           ...d.data(),
           createdAt: d.data().createdAt?.toDate() || new Date(),
-          parishName: d.data().parishId ? 'Imeunganishwa' : 'Bado haijaunganishwa',
-        }))
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()) as AdminUser[];
+          parishName: d.data().parishId
+            ? (parishMap[d.data().parishId] || 'Parokia Haijulikani')
+            : undefined,
+        })) as AdminUser[];
+
       setAdmins(adminList);
     } catch (error) {
       console.error('Error loading admins:', error);
@@ -87,21 +105,20 @@ export default function SuperAdminsPage() {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
+  // ── Invite ──
   const openInvite = () => {
     setInviteEmail('');
     setInviteDisplayName('');
     setInviteError('');
     setInviteToken('');
     setCopied(false);
-    setShowModal(true);
+    setShowInviteModal(true);
   };
 
-  const closeModal = () => {
-    setShowModal(false);
+  const closeInviteModal = () => {
+    setShowInviteModal(false);
     setInviteError('');
     setInviteToken('');
     setCopied(false);
@@ -113,7 +130,7 @@ export default function SuperAdminsPage() {
     setInviting(true);
 
     const SECONDARY_APP_NAME = 'misa-invite-secondary';
-    let secondaryApp = getApps().find((a) => a.name === SECONDARY_APP_NAME);
+    let secondaryApp = getApps().find(a => a.name === SECONDARY_APP_NAME);
     const createdSecondary = !secondaryApp;
     if (!secondaryApp) secondaryApp = initializeApp(firebaseConfig, SECONDARY_APP_NAME);
     const secondaryAuth = getAuth(secondaryApp);
@@ -124,12 +141,10 @@ export default function SuperAdminsPage() {
         secondaryAuth, inviteEmail.trim(), tempPassword
       );
 
-      // Generate single-use token valid for 1 hour
       const token = generateToken();
       const expiresAt = Timestamp.fromDate(new Date(Date.now() + 60 * 60 * 1000));
 
       await Promise.all([
-        // User doc — no parishId yet, parish admin sets up their own parish on first login
         setDoc(doc(db, 'users', newUser.uid), {
           email: inviteEmail.trim().toLowerCase(),
           displayName: inviteDisplayName.trim() || null,
@@ -138,7 +153,6 @@ export default function SuperAdminsPage() {
           status: 'invited',
           createdAt: Timestamp.now(),
         }),
-        // Single-use invite token stored in Firestore
         addDoc(collection(db, 'invite_tokens'), {
           token,
           uid: newUser.uid,
@@ -147,7 +161,6 @@ export default function SuperAdminsPage() {
           used: false,
           createdAt: Timestamp.now(),
         }),
-        // Firebase sends branded password-reset / invite email
         sendPasswordResetEmail(secondaryAuth, inviteEmail.trim()),
       ]);
 
@@ -167,26 +180,80 @@ export default function SuperAdminsPage() {
     }
   };
 
-  const whatsappMessage = (token: string) =>
-`Habari ${inviteDisplayName || ''},
+  // ── Resend ──
+  const handleResend = async (admin: AdminUser) => {
+    setResendTarget(admin);
+    setResending(true);
+    setResendToken('');
+    setResendCopied(false);
+
+    try {
+      // Invalidate all existing unused tokens for this user
+      const oldSnap = await getDocs(query(
+        collection(db, 'invite_tokens'),
+        where('uid', '==', admin.id)
+      ));
+      const invalidations = oldSnap.docs
+        .filter(d => !d.data().used)
+        .map(d => updateDoc(doc(db, 'invite_tokens', d.id), {
+          used: true,
+          usedAt: Timestamp.now(),
+        }));
+      await Promise.all(invalidations);
+
+      // Create fresh token
+      const token = generateToken();
+      const expiresAt = Timestamp.fromDate(new Date(Date.now() + 60 * 60 * 1000));
+      await addDoc(collection(db, 'invite_tokens'), {
+        token,
+        uid: admin.id,
+        email: admin.email,
+        expiresAt,
+        used: false,
+        createdAt: Timestamp.now(),
+      });
+
+      // Send a new password reset email (user already exists in Auth)
+      await sendPasswordResetEmail(auth, admin.email);
+
+      setResendToken(token);
+    } catch (err) {
+      console.error('Resend error:', err);
+      alert('Imeshindwa kutuma mwaliko upya. Tafadhali jaribu tena.');
+      setResendTarget(null);
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const closeResendModal = () => {
+    setResendTarget(null);
+    setResendToken('');
+    setResendCopied(false);
+  };
+
+  // ── WhatsApp message builder ──
+  const buildWhatsappMessage = (email: string, name: string | null | undefined, token: string) =>
+`Habari ${name || ''},
 
 Umealikwa kuwa Msimamizi wa Parokia kwenye mfumo wa *Misa Admin*.
 
-📧 Barua pepe yako: ${inviteEmail}
+📧 Barua pepe yako: ${email}
 🔐 Hatua 1: Angalia barua pepe yako — utapata ujumbe wa kuweka nenosiri. Bonyeza kiungo ndani yake.
-🔗 Hatua 2: Baada ya kuweka nenosiri, bonyeza kiungo hiki cha mwaliko (halali kwa saa 1 tu):
+🔗 Hatua 2: Baada ya kuweka nenosiri na kuingia, bonyeza kiungo hiki cha mwaliko (halali kwa saa 1 tu):
 ${typeof window !== 'undefined' ? window.location.origin : 'https://misa-admin.vercel.app'}/invite/${token}
 
 ⚠️ Kiungo hiki ni cha matumizi moja tu. Usikishirikishe mtu yeyote.
 
 Karibu sana kwenye familia ya Misa! 🙏`;
 
-  const copyWhatsApp = () => {
-    navigator.clipboard.writeText(whatsappMessage(inviteToken));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+  const copyMessage = (email: string, name: string | null | undefined, token: string, setCopiedFn: (v: boolean) => void) => {
+    navigator.clipboard.writeText(buildWhatsappMessage(email, name, token));
+    setCopiedFn(true);
+    setTimeout(() => setCopiedFn(false), 2500);
   };
 
+  // ── Actions (disable / enable / delete) ──
   const confirmAction = (admin: AdminUser, type: 'disable' | 'enable' | 'delete') => {
     setActionTarget(admin);
     setActionType(type);
@@ -214,11 +281,10 @@ Karibu sana kwenye familia ya Misa! 🙏`;
     }
   };
 
-  const filtered = admins.filter(
-    (a) =>
-      a.email.toLowerCase().includes(search.toLowerCase()) ||
-      (a.displayName || '').toLowerCase().includes(search.toLowerCase()) ||
-      (a.parishName || '').toLowerCase().includes(search.toLowerCase())
+  const filtered = admins.filter(a =>
+    a.email.toLowerCase().includes(search.toLowerCase()) ||
+    (a.displayName || '').toLowerCase().includes(search.toLowerCase()) ||
+    (a.parishName || '').toLowerCase().includes(search.toLowerCase())
   );
 
   const inputClass =
@@ -228,6 +294,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
     <SuperAdminRoute>
       <DashboardLayout>
         <div className="p-4 sm:p-6 lg:p-8">
+
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
@@ -256,7 +323,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
               type="text"
               placeholder="Tafuta msimamizi..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={e => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
             />
           </div>
@@ -271,13 +338,9 @@ Karibu sana kwenye familia ya Misa! 🙏`;
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-20">
-              <span className="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600">
-                manage_accounts
-              </span>
+              <span className="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600">manage_accounts</span>
               <p className="text-gray-500 dark:text-gray-400 mt-3">
-                {search
-                  ? 'Hakuna msimamizi anayelingana na utafutaji.'
-                  : 'Bado hakuna msimamizi aliyealikwa.'}
+                {search ? 'Hakuna msimamizi anayelingana na utafutaji.' : 'Bado hakuna msimamizi aliyealikwa.'}
               </p>
               {!search && (
                 <button
@@ -291,28 +354,21 @@ Karibu sana kwenye familia ya Misa! 🙏`;
             </div>
           ) : (
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+
               {/* Desktop table */}
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        Msimamizi
-                      </th>
-                      <th className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        Parokia
-                      </th>
-                      <th className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        Hali
-                      </th>
-                      <th className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        Tarehe ya Kujiandikisha
-                      </th>
-                      <th className="px-6 py-4" />
+                      {['Msimamizi', 'Parokia', 'Hali', 'Tarehe ya Kujiandikisha', ''].map(h => (
+                        <th key={h} className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                    {filtered.map((admin) => {
+                    {filtered.map(admin => {
                       const status = admin.status || 'active';
                       return (
                         <tr key={admin.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
@@ -330,26 +386,29 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                             </div>
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                            {admin.parishName}
+                            {admin.parishName ?? (
+                              <span className="italic text-gray-400 dark:text-gray-500">Haijaunganishwa</span>
+                            )}
                           </td>
                           <td className="px-6 py-4">
-                            <span
-                              className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                                STATUS_STYLES[status] || STATUS_STYLES.active
-                              }`}
-                            >
+                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_STYLES[status] || STATUS_STYLES.active}`}>
                               {STATUS_LABELS[status] || status}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                            {admin.createdAt.toLocaleDateString('sw-TZ', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                            })}
+                            {admin.createdAt.toLocaleDateString('sw-TZ', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-end gap-1">
+                              {status === 'invited' && (
+                                <button
+                                  onClick={() => handleResend(admin)}
+                                  title="Tuma mwaliko upya"
+                                  className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                >
+                                  <span className="material-symbols-outlined text-lg">forward_to_inbox</span>
+                                </button>
+                              )}
                               {status === 'disabled' ? (
                                 <button
                                   onClick={() => confirmAction(admin, 'enable')}
@@ -385,7 +444,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
 
               {/* Mobile card list */}
               <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
-                {filtered.map((admin) => {
+                {filtered.map(admin => {
                   const status = admin.status || 'active';
                   return (
                     <div key={admin.id} className="p-4">
@@ -399,24 +458,28 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                               {admin.displayName || admin.email}
                             </p>
                             {admin.displayName && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                {admin.email}
-                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{admin.email}</p>
                             )}
                             <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
-                              {admin.parishName}
+                              {admin.parishName ?? <span className="italic">Haijaunganishwa</span>}
                             </p>
                           </div>
                         </div>
-                        <span
-                          className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${
-                            STATUS_STYLES[status] || STATUS_STYLES.active
-                          }`}
-                        >
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${STATUS_STYLES[status] || STATUS_STYLES.active}`}>
                           {STATUS_LABELS[status] || status}
                         </span>
                       </div>
-                      <div className="flex gap-2 mt-3">
+                      <div className="flex gap-2 mt-3 flex-wrap">
+                        {status === 'invited' && (
+                          <button
+                            onClick={() => handleResend(admin)}
+                            disabled={resending && resendTarget?.id === admin.id}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-900 disabled:opacity-50"
+                          >
+                            <span className="material-symbols-outlined text-base">forward_to_inbox</span>
+                            Tuma Upya
+                          </button>
+                        )}
                         {status === 'disabled' ? (
                           <button
                             onClick={() => confirmAction(admin, 'enable')}
@@ -450,24 +513,18 @@ Karibu sana kwenye familia ya Misa! 🙏`;
           )}
         </div>
 
-        {/* Invite Modal */}
-        {showModal && (
+        {/* ── Invite Modal ── */}
+        {showInviteModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md">
               <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Alika Msimamizi Mpya
-                </h2>
-                <button
-                  onClick={closeModal}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500"
-                >
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Alika Msimamizi Mpya</h2>
+                <button onClick={closeInviteModal} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500">
                   <span className="material-symbols-outlined">close</span>
                 </button>
               </div>
 
               {inviteToken ? (
-                /* ── Success state ── */
                 <div className="p-6 space-y-4">
                   <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
                     <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-2xl">mark_email_read</span>
@@ -487,7 +544,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                       </p>
                     </div>
                     <p className="text-xs text-amber-700 dark:text-amber-400 font-mono break-all bg-amber-100 dark:bg-amber-900/40 px-3 py-2 rounded-lg">
-                      {typeof window !== 'undefined' ? window.location.origin : 'https://misa-admin.vercel.app'}/invite/{inviteToken}
+                      {typeof window !== 'undefined' ? window.location.origin : ''}/invite/{inviteToken}
                     </p>
                   </div>
 
@@ -496,34 +553,26 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                       Ujumbe wa WhatsApp / SMS
                     </p>
                     <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed font-sans">
-                      {whatsappMessage(inviteToken)}
+                      {buildWhatsappMessage(inviteEmail, inviteDisplayName, inviteToken)}
                     </pre>
                     <button
                       type="button"
-                      onClick={copyWhatsApp}
+                      onClick={() => copyMessage(inviteEmail, inviteDisplayName, inviteToken, setCopied)}
                       className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-forest text-white text-xs font-semibold rounded-lg hover:bg-forest-mid transition-colors"
                     >
-                      <span className="material-symbols-outlined text-[14px]">
-                        {copied ? 'check' : 'content_copy'}
-                      </span>
+                      <span className="material-symbols-outlined text-[14px]">{copied ? 'check' : 'content_copy'}</span>
                       {copied ? 'Imenakiliwa!' : 'Nakili Ujumbe'}
                     </button>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
+                  <button type="button" onClick={closeInviteModal} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Funga
                   </button>
                 </div>
               ) : (
-                /* ── Form state ── */
                 <form onSubmit={handleInvite} className="p-6 space-y-4">
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     Msimamizi atapata barua pepe ya kuweka nenosiri na kiungo cha mwaliko cha matumizi moja.
-                    Atajaza taarifa za parokia yake mwenyewe baada ya kuingia.
                   </p>
 
                   {inviteError && (
@@ -536,44 +585,26 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Barua Pepe <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="email" required
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      className={inputClass}
-                      placeholder="padre@parokia.com"
-                    />
+                    <input type="email" required value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
+                      className={inputClass} placeholder="padre@parokia.com" />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Jina Kamili
-                    </label>
-                    <input
-                      type="text"
-                      value={inviteDisplayName}
-                      onChange={(e) => setInviteDisplayName(e.target.value)}
-                      className={inputClass}
-                      placeholder="Padre Petro Makundi"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Jina Kamili</label>
+                    <input type="text" value={inviteDisplayName} onChange={e => setInviteDisplayName(e.target.value)}
+                      className={inputClass} placeholder="Padre Petro Makundi" />
                   </div>
 
                   <div className="flex gap-3 pt-2">
-                    <button
-                      type="button" onClick={closeModal}
-                      className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    >
+                    <button type="button" onClick={closeInviteModal}
+                      className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                       Ghairi
                     </button>
-                    <button
-                      type="submit" disabled={inviting}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                    >
-                      {inviting ? (
-                        <><span className="material-symbols-outlined animate-spin">progress_activity</span>Inatuma...</>
-                      ) : (
-                        <><span className="material-symbols-outlined">send</span>Tuma Mwaliko</>
-                      )}
+                    <button type="submit" disabled={inviting}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors disabled:opacity-50">
+                      {inviting
+                        ? <><span className="material-symbols-outlined animate-spin">progress_activity</span>Inatuma...</>
+                        : <><span className="material-symbols-outlined">send</span>Tuma Mwaliko</>}
                     </button>
                   </div>
                 </form>
@@ -582,55 +613,114 @@ Karibu sana kwenye familia ya Misa! 🙏`;
           </div>
         )}
 
-        {/* Action Confirmation Modal */}
+        {/* ── Resend Modal ── */}
+        {resendTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Tuma Mwaliko Upya</h2>
+                <button onClick={closeResendModal} disabled={resending} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500">
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+
+              <div className="p-6">
+                {resending ? (
+                  <div className="flex flex-col items-center py-8 gap-3">
+                    <div className="relative w-10 h-10">
+                      <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
+                      <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Inatuma mwaliko mpya…</p>
+                  </div>
+                ) : resendToken ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                      <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-2xl">forward_to_inbox</span>
+                      <div>
+                        <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">Mwaliko Mpya Umetumwa!</p>
+                        <p className="text-xs text-blue-600 dark:text-blue-500 mt-0.5">
+                          Kwa <span className="font-medium">{resendTarget.email}</span> — mwaliko wa zamani umebatilishwa
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="material-symbols-outlined text-amber-600 text-[18px]">timer</span>
+                        <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+                          Kiungo kipya halali kwa saa 1 tu
+                        </p>
+                      </div>
+                      <p className="text-xs text-amber-700 dark:text-amber-400 font-mono break-all bg-amber-100 dark:bg-amber-900/40 px-3 py-2 rounded-lg">
+                        {typeof window !== 'undefined' ? window.location.origin : ''}/invite/{resendToken}
+                      </p>
+                    </div>
+
+                    <div className="p-4 bg-gray-50 dark:bg-gray-700/60 rounded-xl border border-gray-200 dark:border-gray-600">
+                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+                        Ujumbe wa WhatsApp / SMS
+                      </p>
+                      <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed font-sans">
+                        {buildWhatsappMessage(resendTarget.email, resendTarget.displayName, resendToken)}
+                      </pre>
+                      <button
+                        type="button"
+                        onClick={() => copyMessage(resendTarget.email, resendTarget.displayName, resendToken, setResendCopied)}
+                        className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-forest text-white text-xs font-semibold rounded-lg hover:bg-forest-mid transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">{resendCopied ? 'check' : 'content_copy'}</span>
+                        {resendCopied ? 'Imenakiliwa!' : 'Nakili Ujumbe'}
+                      </button>
+                    </div>
+
+                    <button type="button" onClick={closeResendModal}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                      Funga
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Action Confirmation Modal ── */}
         {actionTarget && actionType && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
-              <div
-                className={`flex items-center justify-center w-14 h-14 rounded-full mx-auto mb-4 ${
-                  actionType === 'delete'
-                    ? 'bg-red-100 dark:bg-red-900/30'
-                    : actionType === 'disable'
-                    ? 'bg-yellow-100 dark:bg-yellow-900/30'
-                    : 'bg-green-100 dark:bg-green-900/30'
-                }`}
-              >
-                <span
-                  className={`material-symbols-outlined text-3xl ${
-                    actionType === 'delete'
-                      ? 'text-red-600 dark:text-red-400'
-                      : actionType === 'disable'
-                      ? 'text-yellow-600 dark:text-yellow-400'
-                      : 'text-green-600 dark:text-green-400'
-                  }`}
-                >
-                  {actionType === 'delete'
-                    ? 'delete_forever'
-                    : actionType === 'disable'
-                    ? 'block'
-                    : 'check_circle'}
+              <div className={`flex items-center justify-center w-14 h-14 rounded-full mx-auto mb-4 ${
+                actionType === 'delete'   ? 'bg-red-100 dark:bg-red-900/30' :
+                actionType === 'disable'  ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+                                            'bg-green-100 dark:bg-green-900/30'
+              }`}>
+                <span className={`material-symbols-outlined text-3xl ${
+                  actionType === 'delete'   ? 'text-red-600 dark:text-red-400' :
+                  actionType === 'disable'  ? 'text-yellow-600 dark:text-yellow-400' :
+                                              'text-green-600 dark:text-green-400'
+                }`}>
+                  {actionType === 'delete' ? 'delete_forever' : actionType === 'disable' ? 'block' : 'check_circle'}
                 </span>
               </div>
 
               <h3 className="text-lg font-bold text-gray-900 dark:text-white text-center">
-                {actionType === 'delete'
-                  ? 'Futa Msimamizi?'
-                  : actionType === 'disable'
-                  ? 'Zuia Msimamizi?'
-                  : 'Wezesha Msimamizi?'}
+                {actionType === 'delete' ? 'Futa Msimamizi?' : actionType === 'disable' ? 'Zuia Msimamizi?' : 'Wezesha Msimamizi?'}
               </h3>
 
               <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-2">
-                {actionType === 'delete'
-                  ? `Una uhakika unataka kufuta akaunti ya`
-                  : actionType === 'disable'
-                  ? `Una uhakika unataka kumzuia`
-                  : `Una uhakika unataka kumwezesha`}{' '}
+                {actionType === 'delete' ? 'Una uhakika unataka kufuta akaunti ya' :
+                 actionType === 'disable' ? 'Una uhakika unataka kumzuia' : 'Una uhakika unataka kumwezesha'}{' '}
                 <span className="font-semibold text-gray-700 dark:text-gray-300">
                   {actionTarget.displayName || actionTarget.email}
                 </span>
                 {actionType === 'delete' ? '? Hatua hii haiwezi kutenduliwa.' : '?'}
               </p>
+
+              {actionType === 'delete' && (
+                <p className="mt-3 text-xs text-center text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2">
+                  Kumbuka: akaunti ya barua pepe itabaki. Kutuma mwaliko kwa barua pepe hii tena haitafanikiwa — tumia "Tuma Upya" badala yake.
+                </p>
+              )}
 
               <div className="flex gap-3 mt-6">
                 <button
@@ -644,23 +734,20 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                   onClick={handleAction}
                   disabled={actioning}
                   className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white font-medium rounded-lg transition-colors disabled:opacity-50 ${
-                    actionType === 'delete'
-                      ? 'bg-red-600 hover:bg-red-700'
-                      : actionType === 'disable'
-                      ? 'bg-yellow-500 hover:bg-yellow-600'
-                      : 'bg-green-600 hover:bg-green-700'
+                    actionType === 'delete'  ? 'bg-red-600 hover:bg-red-700' :
+                    actionType === 'disable' ? 'bg-yellow-500 hover:bg-yellow-600' :
+                                               'bg-green-600 hover:bg-green-700'
                   }`}
                 >
-                  {actioning ? (
-                    <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
-                  ) : (
-                    'Ndio, Endelea'
-                  )}
+                  {actioning
+                    ? <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
+                    : 'Ndio, Endelea'}
                 </button>
               </div>
             </div>
           </div>
         )}
+
       </DashboardLayout>
     </SuperAdminRoute>
   );

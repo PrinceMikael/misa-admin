@@ -14,7 +14,7 @@ import {
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 
-type State = 'loading' | 'valid' | 'invalid' | 'expired' | 'used' | 'success';
+type State = 'loading' | 'not_logged_in' | 'valid' | 'invalid' | 'expired' | 'used' | 'not_yours' | 'success';
 
 export default function InvitePage() {
   const { token } = useParams<{ token: string }>();
@@ -25,10 +25,15 @@ export default function InvitePage() {
 
   useEffect(() => {
     if (authLoading) return;
+    if (!user) {
+      setState('not_logged_in');
+      return;
+    }
     verifyToken();
-  }, [token, authLoading]);
+  }, [token, authLoading, user]);
 
   const verifyToken = async () => {
+    if (!user) return;
     try {
       const q = query(collection(db, 'invite_tokens'), where('token', '==', token));
       const snap = await getDocs(q);
@@ -43,6 +48,9 @@ export default function InvitePage() {
       const expiresAt = (data.expiresAt as Timestamp).toDate();
       if (new Date() > expiresAt) { setState('expired'); return; }
 
+      // Verify the logged-in user is the one this invite was sent to
+      if (data.uid !== user.uid) { setState('not_yours'); return; }
+
       setTokenDocId(tokenDoc.id);
       setState('valid');
     } catch {
@@ -51,33 +59,40 @@ export default function InvitePage() {
   };
 
   const handleAccept = async () => {
-    if (!tokenDocId) return;
+    if (!tokenDocId || !user) return;
     try {
       setState('loading');
-      await updateDoc(doc(db, 'invite_tokens', tokenDocId), { used: true, usedAt: Timestamp.now() });
+      await updateDoc(doc(db, 'invite_tokens', tokenDocId), {
+        used: true,
+        usedAt: Timestamp.now(),
+      });
       setState('success');
-      setTimeout(() => {
-        if (user) router.replace('/onboarding');
-        else router.replace('/login');
-      }, 2000);
+      setTimeout(() => router.replace('/onboarding'), 2000);
     } catch {
       setState('invalid');
     }
   };
 
-  const content: Record<State, { icon: string; color: string; title: string; body: string; action?: string }> = {
+  const loginUrl = `/login?returnTo=${encodeURIComponent(`/invite/${token}`)}`;
+
+  const content: Record<State, { icon: string; color: string; title: string; body: string }> = {
     loading: {
       icon: 'progress_activity',
       color: '#c4933f',
       title: 'Inathibitisha…',
       body: 'Tafadhali subiri.',
     },
+    not_logged_in: {
+      icon: 'lock',
+      color: '#c4933f',
+      title: 'Ingia Kwanza',
+      body: 'Lazima uingie kwenye akaunti yako kabla ya kukubali mwaliko. Kwanza weka nenosiri kupitia barua pepe uliyopokea, kisha ingia hapa.',
+    },
     valid: {
       icon: 'mark_email_read',
       color: '#059669',
       title: 'Mwaliko Halali!',
       body: 'Umealikwa kuwa Msimamizi wa Parokia kwenye mfumo wa Misa Admin. Bonyeza kitufe hapa chini kukubali.',
-      action: 'Kubali Mwaliko',
     },
     expired: {
       icon: 'timer_off',
@@ -97,11 +112,17 @@ export default function InvitePage() {
       title: 'Mwaliko Batili',
       body: 'Kiungo hiki si sahihi au hakipo. Tafadhali angalia kiungo ulichopewa au wasiliana na msimamizi mkuu.',
     },
+    not_yours: {
+      icon: 'person_off',
+      color: '#ef4444',
+      title: 'Si Mwaliko Wako',
+      body: 'Kiungo hiki cha mwaliko hakikutengwa kwa akaunti hii. Hakikisha umeingia kwa barua pepe iliyotumiwa mwaliko, au wasiliana na msimamizi mkuu.',
+    },
     success: {
       icon: 'check_circle',
       color: '#059669',
       title: 'Umefanikiwa!',
-      body: 'Mwaliko umekubaliwa. Unakupelekwa…',
+      body: 'Mwaliko umekubaliwa. Unakupelekwa usanidi wa parokia yako…',
     },
   };
 
@@ -112,7 +133,6 @@ export default function InvitePage() {
       className="min-h-screen flex items-center justify-center p-6"
       style={{ background: 'linear-gradient(160deg, #1a3d2e 0%, #0e2418 100%)' }}
     >
-      {/* Background cross */}
       <div
         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none select-none"
         style={{ fontSize: '28rem', lineHeight: 1, color: 'rgba(196,147,63,0.04)', fontFamily: 'Georgia, serif' }}
@@ -120,12 +140,10 @@ export default function InvitePage() {
       >✝</div>
 
       <div className="relative w-full max-w-sm">
-        {/* Card */}
         <div
           className="rounded-2xl p-8 text-center"
           style={{ background: 'rgba(250,247,240,0.97)', boxShadow: '0 24px 64px rgba(0,0,0,0.4)' }}
         >
-          {/* Logo */}
           <div className="flex justify-center mb-6">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg"
@@ -139,7 +157,6 @@ export default function InvitePage() {
             </div>
           </div>
 
-          {/* Icon */}
           <div className="flex justify-center mb-4">
             <span
               className={`material-symbols-outlined text-5xl ${state === 'loading' ? 'animate-spin' : ''}`}
@@ -149,7 +166,6 @@ export default function InvitePage() {
             </span>
           </div>
 
-          {/* Title */}
           <h1
             className="text-2xl font-semibold text-[#1a3d2e] mb-2"
             style={{ fontFamily: 'var(--font-cormorant)' }}
@@ -157,21 +173,25 @@ export default function InvitePage() {
             {c.title}
           </h1>
 
-          {/* Body */}
-          <p className="text-sm text-[#8a8479] leading-relaxed mb-6">{c.body}</p>
+          <p className="text-sm text-ash leading-relaxed mb-6">{c.body}</p>
 
-          {/* Gold rule */}
           <hr className="gold-rule mb-6" />
 
-          {/* Action */}
+          {state === 'not_logged_in' && (
+            <a href={loginUrl} className="btn-gold w-full justify-center">
+              <span className="material-symbols-outlined text-[18px]">login</span>
+              Ingia Sasa
+            </a>
+          )}
+
           {state === 'valid' && (
             <button onClick={handleAccept} className="btn-gold w-full justify-center">
               <span className="material-symbols-outlined text-[18px]">how_to_reg</span>
-              {c.action}
+              Kubali Mwaliko
             </button>
           )}
 
-          {(state === 'expired' || state === 'used' || state === 'invalid') && (
+          {(state === 'expired' || state === 'used' || state === 'invalid' || state === 'not_yours') && (
             <a
               href="/login"
               className="inline-flex items-center gap-2 text-sm text-[#c4933f] hover:text-[#b8832e] font-medium transition-colors"
@@ -181,7 +201,7 @@ export default function InvitePage() {
             </a>
           )}
 
-          <p className="mt-6 text-[11px] text-[#c4bfb4]">Misa Admin · Usimamizi wa Parokia</p>
+          <p className="mt-6 text-[11px] text-ash-light">Misa Admin · Usimamizi wa Parokia</p>
         </div>
       </div>
     </div>

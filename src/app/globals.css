@@ -37,8 +37,22 @@
 
 /* ─── Base reset ─── */
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-tap-highlight-color: transparent; }
-body { min-height: 100vh; background: var(--color-parchment); color: var(--color-ink); }
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+  /* Prevent any child from widening the page beyond the viewport */
+  max-width: 100%;
+}
+
+body {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  background: var(--color-parchment);
+  color: var(--color-ink);
+}
 
 /* Dark body bg */
 .dark body { background: #0e1f17; color: #e8e3d8; }
