@@ -107,7 +107,7 @@ export default function IntentionsPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
 
         {/* Header */}
         <div className="mb-6 anim-fade-up">
@@ -124,7 +124,7 @@ export default function IntentionsPage() {
         </div>
 
         {/* Filter tabs — scroll on mobile, full on sm+ */}
-        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 anim-fade-up anim-delay-1">
+        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 anim-fade-up anim-delay-1">
           {TABS.map(tab => {
             const active = filter === tab.key;
             const count = statusCounts[tab.key];

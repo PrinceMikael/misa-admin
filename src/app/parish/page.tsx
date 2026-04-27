@@ -180,7 +180,7 @@ export default function ParishPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl">
 
         {/* Header */}
         <div className="mb-6 anim-fade-up">

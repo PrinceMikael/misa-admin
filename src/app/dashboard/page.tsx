@@ -109,7 +109,7 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-5 sm:p-8 max-w-5xl mx-auto">
+      <div className="p-5 sm:p-8 max-w-5xl">
 
         {/* Page header */}
         <div className="mb-8 anim-fade-up">
