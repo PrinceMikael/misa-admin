@@ -27,12 +27,7 @@ const superNavItems: NavItem[] = [
   { href: '/super/analytics', icon: 'bar_chart',       label: 'Takwimu' },
 ];
 
-interface SidebarProps {
-  open: boolean;
-  onClose: () => void;
-}
-
-export default function Sidebar({ open, onClose }: SidebarProps) {
+export default function Sidebar() {
   const pathname = usePathname();
   const { userData, isSuperAdmin, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -54,7 +49,6 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       <li>
         <Link
           href={item.href}
-          onClick={onClose}
           className={`
             relative group flex items-center gap-2.5 px-3 py-2 rounded-xl
             text-[13px] font-medium transition-all duration-150
@@ -85,22 +79,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
   return (
     <>
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
-          onClick={onClose}
-        />
-      )}
-
-      {/* Always fixed — content area uses lg:ml-64 to compensate on desktop */}
       <aside
-        className={`
-          grain fixed top-0 left-0 z-50
-          flex flex-col h-screen w-64
-          transition-transform duration-250 ease-in-out
-          lg:translate-x-0
-          ${open ? 'translate-x-0' : '-translate-x-full'}
-        `}
+        className="grain fixed top-0 left-0 z-50 hidden lg:flex flex-col h-screen w-64"
         style={{ background: 'linear-gradient(180deg, #1a3d2e 0%, #0f2419 100%)' }}
       >
 
