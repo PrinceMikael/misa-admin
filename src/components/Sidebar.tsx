@@ -50,7 +50,8 @@ export default function Sidebar() {
         <Link
           href={item.href}
           className={`
-            relative group flex items-center gap-2.5 px-3 py-2 rounded-xl
+            relative group flex items-center justify-center lg:justify-start
+            gap-0 lg:gap-2.5 px-0 lg:px-3 py-3 lg:py-2 rounded-xl
             text-[13px] font-medium transition-all duration-150
             ${isActive
               ? 'bg-white/10 text-white'
@@ -61,14 +62,21 @@ export default function Sidebar() {
           {isActive && (
             <span className="absolute left-0 inset-y-2 w-0.75 rounded-r-full bg-[#c4933f]" />
           )}
-          <span className={`material-symbols-outlined text-[17px] shrink-0 transition-colors ${
-            isActive ? 'text-[#c4933f]' : 'text-[#4d7a63] group-hover:text-[#9db8a8]'
-          }`}>
-            {item.icon}
-          </span>
-          <span className="flex-1 truncate">{item.label}</span>
+          <div className="relative shrink-0">
+            <span className={`material-symbols-outlined text-[20px] lg:text-[17px] transition-colors ${
+              isActive ? 'text-[#c4933f]' : 'text-[#4d7a63] group-hover:text-[#9db8a8]'
+            }`}>
+              {item.icon}
+            </span>
+            {showBadge && (
+              <span className="absolute -top-1 -right-1.5 lg:hidden inline-flex items-center justify-center min-w-3.5 h-3.5 px-0.5 rounded-full text-[8px] font-bold bg-[#c4933f] text-white">
+                {pendingCount > 99 ? '99+' : pendingCount}
+              </span>
+            )}
+          </div>
+          <span className="hidden lg:flex flex-1 truncate">{item.label}</span>
           {showBadge && (
-            <span className="inline-flex items-center justify-center min-w-4.5 h-4.5 px-1 rounded-full text-[9px] font-bold bg-[#c4933f] text-white shrink-0">
+            <span className="hidden lg:inline-flex items-center justify-center min-w-4.5 h-4.5 px-1 rounded-full text-[9px] font-bold bg-[#c4933f] text-white shrink-0">
               {pendingCount > 99 ? '99+' : pendingCount}
             </span>
           )}
@@ -78,118 +86,116 @@ export default function Sidebar() {
   };
 
   return (
-    <>
-      <aside
-        className="grain fixed top-0 left-0 z-50 hidden lg:flex flex-col h-screen w-64"
-        style={{ background: 'linear-gradient(180deg, #1a3d2e 0%, #0f2419 100%)' }}
-      >
+    <aside
+      className="grain fixed top-0 left-0 z-50 flex flex-col h-screen w-14 lg:w-64 transition-all duration-250"
+      style={{ background: 'linear-gradient(180deg, #1a3d2e 0%, #0f2419 100%)' }}
+    >
 
-        {/* ── Brand ── */}
-        <div className="flex items-center gap-3 px-4 pt-5 pb-4 shrink-0">
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, #c4933f, #e2b96a)',
-              color: '#1a3d2e',
-              fontFamily: 'var(--font-cormorant)',
-              fontSize: '0.875rem',
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-            }}
+      {/* ── Brand ── */}
+      <div className="flex items-center justify-center lg:justify-start gap-0 lg:gap-3 px-0 lg:px-4 pt-5 pb-4 shrink-0">
+        <div
+          className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+          style={{
+            background: 'linear-gradient(135deg, #c4933f, #e2b96a)',
+            color: '#1a3d2e',
+            fontFamily: 'var(--font-cormorant)',
+            fontSize: '0.875rem',
+            fontWeight: 700,
+            letterSpacing: '0.04em',
+          }}
+        >
+          MA
+        </div>
+        <div className="hidden lg:block min-w-0">
+          <p
+            className="text-white font-semibold leading-none"
+            style={{ fontFamily: 'var(--font-cormorant)', fontSize: '1rem', letterSpacing: '0.01em' }}
           >
-            MA
-          </div>
-          <div className="min-w-0">
-            <p
-              className="text-white font-semibold leading-none"
-              style={{ fontFamily: 'var(--font-cormorant)', fontSize: '1rem', letterSpacing: '0.01em' }}
-            >
-              Misa Admin
-            </p>
-            <p className="text-[#3d6650] text-[9px] font-bold uppercase tracking-[0.18em] mt-1">
-              Usimamizi
-            </p>
-          </div>
-        </div>
-
-        <div className="mx-4 shrink-0"><hr className="gold-rule" /></div>
-
-        {/* ── Navigation ── */}
-        <nav className="flex-1 min-h-0 overflow-y-auto px-2.5 py-3">
-          <p className="px-3 mb-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-[#3a5e4a]">
-            Parokia
+            Misa Admin
           </p>
-          <ul className="space-y-0.5">
-            {parishNavItems.map((item) => (
-              <NavLink key={item.href} item={item} />
-            ))}
-          </ul>
-
-          {isSuperAdmin && (
-            <>
-              <div className="mx-2 mt-3 mb-3"><hr className="gold-rule" /></div>
-              <p className="px-3 mb-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-[#c4933f]/70">
-                Msimamizi Mkuu
-              </p>
-              <ul className="space-y-0.5">
-                {superNavItems.map((item) => (
-                  <NavLink key={item.href} item={item} />
-                ))}
-              </ul>
-            </>
-          )}
-        </nav>
-
-        {/* ── Bottom ── */}
-        <div className="shrink-0 px-4 pb-4">
-          <hr className="gold-rule mb-3" />
-
-          {userData && (
-            <div className="flex items-center gap-2 px-1 mb-2">
-              <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-bold"
-                style={{
-                  background: 'rgba(196,147,63,0.15)',
-                  color: '#c4933f',
-                  fontFamily: 'var(--font-cormorant)',
-                  border: '1px solid rgba(196,147,63,0.2)',
-                }}
-              >
-                {initials}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[#e8e3d8] text-[12px] font-medium truncate leading-tight">
-                  {userData.displayName || userData.email}
-                </p>
-                <span className={`text-[9px] font-bold uppercase tracking-[0.14em] ${
-                  isSuperAdmin ? 'text-[#c4933f]' : 'text-[#3d6650]'
-                }`}>
-                  {isSuperAdmin ? 'Super Admin' : 'Msimamizi'}
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-0.5">
-            <button
-              onClick={toggleTheme}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[#6b9080] hover:text-white hover:bg-white/7 text-[12px] font-medium transition-all"
-            >
-              <span className="material-symbols-outlined text-[16px] shrink-0">
-                {theme === 'dark' ? 'light_mode' : 'dark_mode'}
-              </span>
-              {theme === 'dark' ? 'Mwanga' : 'Giza'}
-            </button>
-            <button
-              onClick={handleSignOut}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[#6b9080] hover:text-[#f87171] hover:bg-red-500/8 text-[12px] font-medium transition-all"
-            >
-              <span className="material-symbols-outlined text-[16px] shrink-0">logout</span>
-              Toka
-            </button>
-          </div>
+          <p className="text-[#3d6650] text-[9px] font-bold uppercase tracking-[0.18em] mt-1">
+            Usimamizi
+          </p>
         </div>
-      </aside>
-    </>
+      </div>
+
+      <div className="mx-2 lg:mx-4 shrink-0"><hr className="gold-rule" /></div>
+
+      {/* ── Navigation ── */}
+      <nav className="flex-1 min-h-0 overflow-y-auto px-1.5 lg:px-2.5 py-3">
+        <p className="hidden lg:block px-3 mb-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-[#3a5e4a]">
+          Parokia
+        </p>
+        <ul className="space-y-0.5">
+          {parishNavItems.map((item) => (
+            <NavLink key={item.href} item={item} />
+          ))}
+        </ul>
+
+        {isSuperAdmin && (
+          <>
+            <div className="mx-0 lg:mx-2 mt-3 mb-3"><hr className="gold-rule" /></div>
+            <p className="hidden lg:block px-3 mb-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-[#c4933f]/70">
+              Msimamizi Mkuu
+            </p>
+            <ul className="space-y-0.5">
+              {superNavItems.map((item) => (
+                <NavLink key={item.href} item={item} />
+              ))}
+            </ul>
+          </>
+        )}
+      </nav>
+
+      {/* ── Bottom ── */}
+      <div className="shrink-0 px-1.5 lg:px-4 pb-4">
+        <hr className="gold-rule mb-3" />
+
+        {userData && (
+          <div className="flex items-center justify-center lg:justify-start gap-0 lg:gap-2 px-0 lg:px-1 mb-2">
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-[10px] font-bold"
+              style={{
+                background: 'rgba(196,147,63,0.15)',
+                color: '#c4933f',
+                fontFamily: 'var(--font-cormorant)',
+                border: '1px solid rgba(196,147,63,0.2)',
+              }}
+            >
+              {initials}
+            </div>
+            <div className="hidden lg:block min-w-0 flex-1">
+              <p className="text-[#e8e3d8] text-[12px] font-medium truncate leading-tight">
+                {userData.displayName || userData.email}
+              </p>
+              <span className={`text-[9px] font-bold uppercase tracking-[0.14em] ${
+                isSuperAdmin ? 'text-[#c4933f]' : 'text-[#3d6650]'
+              }`}>
+                {isSuperAdmin ? 'Super Admin' : 'Msimamizi'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-0.5">
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center justify-center lg:justify-start gap-0 lg:gap-2.5 px-0 lg:px-3 py-2.5 lg:py-2 rounded-xl text-[#6b9080] hover:text-white hover:bg-white/7 text-[12px] font-medium transition-all"
+          >
+            <span className="material-symbols-outlined text-[18px] lg:text-[16px] shrink-0">
+              {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+            </span>
+            <span className="hidden lg:inline">{theme === 'dark' ? 'Mwanga' : 'Giza'}</span>
+          </button>
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center justify-center lg:justify-start gap-0 lg:gap-2.5 px-0 lg:px-3 py-2.5 lg:py-2 rounded-xl text-[#6b9080] hover:text-[#f87171] hover:bg-red-500/8 text-[12px] font-medium transition-all"
+          >
+            <span className="material-symbols-outlined text-[18px] lg:text-[16px] shrink-0">logout</span>
+            <span className="hidden lg:inline">Toka</span>
+          </button>
+        </div>
+      </div>
+    </aside>
   );
 }
