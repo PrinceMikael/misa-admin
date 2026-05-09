@@ -31,6 +31,7 @@ export interface Parish {
   phone?: string;
   email?: string;
   imageUrl?: string;
+  imageUrls?: string[];
   currentSeason?: LiturgicalSeason;
   seasonNote?: string;
   createdAt: Date;

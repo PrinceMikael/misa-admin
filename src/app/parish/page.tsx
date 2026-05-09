@@ -32,7 +32,8 @@ export default function ParishPage() {
     name: '', nameSwahili: '', diocese: '', region: '', deanery: '',
     address: '', description: '', history: '', patronSaint: '', foundedYear: '',
     priestName: '', officeHours: '', mpesaTillNumber: '', mpesaAmount: '',
-    latitude: '', longitude: '', phone: '', email: '', imageUrl: '',
+    latitude: '', longitude: '', phone: '', email: '',
+    imageUrls: [] as string[],
     currentSeason: '' as LiturgicalSeason | '',
     seasonNote: '',
   });
@@ -61,7 +62,8 @@ export default function ParishPage() {
           mpesaAmount: data.mpesaAmount?.toString() || '',
           latitude: data.location?.latitude?.toString() || '',
           longitude: data.location?.longitude?.toString() || '',
-          phone: data.phone || '', email: data.email || '', imageUrl: data.imageUrl || '',
+          phone: data.phone || '', email: data.email || '',
+          imageUrls: data.imageUrls || (data.imageUrl ? [data.imageUrl] : []),
           currentSeason: data.currentSeason || '', seasonNote: data.seasonNote || '',
         });
         setLocationStatus(data.locationStatus || undefined);
@@ -92,20 +94,29 @@ export default function ParishPage() {
   }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !userData?.parishId) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length || !userData?.parishId) return;
     try {
       setUploading(true);
-      const storageRef = ref(storage, `parishes/${userData.parishId}/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      setFormData(prev => ({ ...prev, imageUrl: downloadURL }));
+      const uploadedUrls: string[] = [];
+      for (const file of files) {
+        const storageRef = ref(storage, `parishes/${userData.parishId}/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(storageRef);
+        uploadedUrls.push(downloadURL);
+      }
+      setFormData(prev => ({ ...prev, imageUrls: [...prev.imageUrls, ...uploadedUrls] }));
     } catch (error) {
       console.error('Error uploading image:', error);
       alert('Imeshindwa kupakia picha. Tafadhali jaribu tena.');
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    setFormData(prev => ({ ...prev, imageUrls: prev.imageUrls.filter((_, i) => i !== index) }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -141,7 +152,8 @@ export default function ParishPage() {
       if (formData.mpesaAmount)    parishData.mpesaAmount   = parseFloat(formData.mpesaAmount);
       if (formData.phone)          parishData.phone         = formData.phone;
       if (formData.email)          parishData.email         = formData.email;
-      if (formData.imageUrl)       parishData.imageUrl      = formData.imageUrl;
+      parishData.imageUrls = formData.imageUrls;
+      parishData.imageUrl  = formData.imageUrls[0] || null;
       parishData.currentSeason = formData.currentSeason || null;
       parishData.seasonNote    = formData.seasonNote    || null;
 
@@ -221,47 +233,47 @@ export default function ParishPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Jina la Parokia (Kiingereza) <span className="text-[#c4933f]">*</span></Label>
-                  <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="input-illuminated" placeholder="St. Peter Parish" />
+                  <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="input-illuminated" placeholder="Mf. St. Peter Parish" />
                 </div>
                 <div>
                   <Label>Jina la Parokia (Kiswahili)</Label>
-                  <input type="text" value={formData.nameSwahili} onChange={e => setFormData({ ...formData, nameSwahili: e.target.value })} className="input-illuminated" placeholder="Parokia ya Mt. Petro" />
+                  <input type="text" value={formData.nameSwahili} onChange={e => setFormData({ ...formData, nameSwahili: e.target.value })} className="input-illuminated" placeholder="Mf. Parokia ya Mt. Petro" />
                 </div>
                 <div>
                   <Label>Jimbo <span className="text-[#c4933f]">*</span></Label>
-                  <input type="text" required value={formData.diocese} onChange={e => setFormData({ ...formData, diocese: e.target.value })} className="input-illuminated" placeholder="Jimbo Kuu la Dar es Salaam" />
+                  <input type="text" required value={formData.diocese} onChange={e => setFormData({ ...formData, diocese: e.target.value })} className="input-illuminated" placeholder="Mf. Jimbo Kuu la Dar es Salaam" />
                 </div>
                 <div>
                   <Label>Mkoa</Label>
-                  <input type="text" value={formData.region} onChange={e => setFormData({ ...formData, region: e.target.value })} className="input-illuminated" placeholder="Dar es Salaam" />
+                  <input type="text" value={formData.region} onChange={e => setFormData({ ...formData, region: e.target.value })} className="input-illuminated" placeholder="Mf. Dar es Salaam" />
                 </div>
                 <div>
                   <Label>Dekanati</Label>
-                  <input type="text" value={formData.deanery} onChange={e => setFormData({ ...formData, deanery: e.target.value })} className="input-illuminated" placeholder="Dekanati ya Masaki" />
+                  <input type="text" value={formData.deanery} onChange={e => setFormData({ ...formData, deanery: e.target.value })} className="input-illuminated" placeholder="Mf. Dekanati ya Masaki" />
                 </div>
                 <div>
                   <Label>Mtakatifu Mlezi</Label>
-                  <input type="text" value={formData.patronSaint} onChange={e => setFormData({ ...formData, patronSaint: e.target.value })} className="input-illuminated" placeholder="Mt. Petro" />
+                  <input type="text" value={formData.patronSaint} onChange={e => setFormData({ ...formData, patronSaint: e.target.value })} className="input-illuminated" placeholder="Mf. Mt. Petro" />
                 </div>
                 <div>
                   <Label>Mwaka wa Kuanzishwa</Label>
-                  <input type="number" value={formData.foundedYear} onChange={e => setFormData({ ...formData, foundedYear: e.target.value })} className="input-illuminated" placeholder="1954" />
+                  <input type="number" value={formData.foundedYear} onChange={e => setFormData({ ...formData, foundedYear: e.target.value })} className="input-illuminated" placeholder="Mf. 1954" />
                 </div>
                 <div>
                   <Label>Padre Paroko</Label>
-                  <input type="text" value={formData.priestName} onChange={e => setFormData({ ...formData, priestName: e.target.value })} className="input-illuminated" placeholder="Padre Petro Makundi" />
+                  <input type="text" value={formData.priestName} onChange={e => setFormData({ ...formData, priestName: e.target.value })} className="input-illuminated" placeholder="Mf. Padre Petro Makundi" />
                 </div>
                 <div className="sm:col-span-2">
                   <Label>Anwani <span className="text-[#c4933f]">*</span></Label>
-                  <textarea required value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} rows={2} className="input-illuminated resize-none" placeholder="Masaki, Dar es Salaam, Tanzania" />
+                  <textarea required value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} rows={2} className="input-illuminated resize-none" placeholder="Mf. Masaki, Dar es Salaam, Tanzania" />
                 </div>
                 <div className="sm:col-span-2">
                   <Label>Maelezo Mafupi</Label>
-                  <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={2} className="input-illuminated resize-none" placeholder="Maelezo mafupi ya parokia…" />
+                  <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={2} className="input-illuminated resize-none" placeholder="Mf. Parokia ya Mt. Petro ilianzishwa mwaka 1960 na Wamisionari…" />
                 </div>
                 <div className="sm:col-span-2">
                   <Label>Historia ya Parokia</Label>
-                  <textarea value={formData.history} onChange={e => setFormData({ ...formData, history: e.target.value })} rows={3} className="input-illuminated resize-none" placeholder="Historia fupi ya parokia…" />
+                  <textarea value={formData.history} onChange={e => setFormData({ ...formData, history: e.target.value })} rows={3} className="input-illuminated resize-none" placeholder="Mf. Parokia hii ilianzishwa na Wamisionari wa Roho Mtakatifu mwaka 1948…" />
                 </div>
               </div>
             </SectionCard>
@@ -271,15 +283,15 @@ export default function ParishPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Namba ya Till ya M-Pesa</Label>
-                  <input type="text" value={formData.mpesaTillNumber} onChange={e => setFormData({ ...formData, mpesaTillNumber: e.target.value })} className="input-illuminated" placeholder="545454" />
+                  <input type="text" value={formData.mpesaTillNumber} onChange={e => setFormData({ ...formData, mpesaTillNumber: e.target.value })} className="input-illuminated" placeholder="Mf. 545454" />
                 </div>
                 <div>
                   <Label>Kiasi cha Nia (TZS)</Label>
-                  <input type="number" value={formData.mpesaAmount} onChange={e => setFormData({ ...formData, mpesaAmount: e.target.value })} className="input-illuminated" placeholder="5000" />
+                  <input type="number" value={formData.mpesaAmount} onChange={e => setFormData({ ...formData, mpesaAmount: e.target.value })} className="input-illuminated" placeholder="Mf. 5000" />
                 </div>
                 <div className="sm:col-span-2">
                   <Label>Saa za Ofisi</Label>
-                  <input type="text" value={formData.officeHours} onChange={e => setFormData({ ...formData, officeHours: e.target.value })} className="input-illuminated" placeholder="Jumatatu–Ijumaa: 8:00–16:00" />
+                  <input type="text" value={formData.officeHours} onChange={e => setFormData({ ...formData, officeHours: e.target.value })} className="input-illuminated" placeholder="Mf. Jumatatu–Ijumaa: 8:00–16:00, Jumamosi: 8:00–12:00" />
                 </div>
               </div>
             </SectionCard>
@@ -354,11 +366,11 @@ export default function ParishPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Namba ya Simu</Label>
-                  <input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="input-illuminated" placeholder="+255 XXX XXX XXX" />
+                  <input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="input-illuminated" placeholder="Mf. +255 712 345 678" />
                 </div>
                 <div>
                   <Label>Barua Pepe</Label>
-                  <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="input-illuminated" placeholder="info@parokia.com" />
+                  <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="input-illuminated" placeholder="Mf. info@parokia.co.tz" />
                 </div>
               </div>
             </SectionCard>
@@ -379,16 +391,33 @@ export default function ParishPage() {
                 </div>
                 <div>
                   <Label>Ujumbe wa Kipindi (hiari)</Label>
-                  <input type="text" value={formData.seasonNote} onChange={e => setFormData({ ...formData, seasonNote: e.target.value })} className="input-illuminated" placeholder="Mf: Wiki 3 ya Kwaresima" />
+                  <input type="text" value={formData.seasonNote} onChange={e => setFormData({ ...formData, seasonNote: e.target.value })} className="input-illuminated" placeholder="Mf. Wiki 3 ya Kwaresima" />
                 </div>
               </div>
             </SectionCard>
 
-            {/* Parish Image */}
-            <SectionCard title="Picha ya Parokia">
-              {formData.imageUrl && (
-                <div className="mb-4 relative">
-                  <img src={formData.imageUrl} alt="Parokia" className="w-full h-48 sm:h-64 object-cover rounded-xl" />
+            {/* Parish Photos */}
+            <SectionCard title="Picha za Parokia" subtitle="Unaweza kupakia picha nyingi za parokia yako.">
+              {formData.imageUrls.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                  {formData.imageUrls.map((url, i) => (
+                    <div key={i} className="relative group rounded-xl overflow-hidden">
+                      <img src={url} alt={`Picha ${i + 1}`} className="w-full h-32 object-cover" />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePhoto(i)}
+                        className="absolute top-1.5 right-1.5 p-1 bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">close</span>
+                      </button>
+                      {i === 0 && (
+                        <span className="absolute bottom-1.5 left-1.5 text-[9px] font-bold uppercase tracking-wider bg-[#c4933f] text-white px-1.5 py-0.5 rounded">
+                          Kuu
+                        </span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
               <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed cursor-pointer transition-colors ${
@@ -398,9 +427,9 @@ export default function ParishPage() {
               }`}>
                 <span className="material-symbols-outlined text-[22px] text-ash">add_photo_alternate</span>
                 <span className="text-sm text-ash dark:text-[#6b9080]">
-                  {uploading ? 'Inapakia picha…' : formData.imageUrl ? 'Badilisha picha' : 'Chagua picha ya parokia'}
+                  {uploading ? 'Inapakia picha…' : 'Ongeza picha (unaweza kuchagua nyingi)'}
                 </span>
-                <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="hidden" />
+                <input type="file" accept="image/*" multiple onChange={handleImageUpload} disabled={uploading} className="hidden" />
               </label>
             </SectionCard>
 

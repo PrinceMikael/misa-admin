@@ -27,6 +27,7 @@ export default function SchedulesPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showCustomSpecialLabel, setShowCustomSpecialLabel] = useState(false);
 
   const [formData, setFormData] = useState({
     dayOfWeek: 0,
@@ -73,14 +74,17 @@ export default function SchedulesPage() {
     setFormData({ dayOfWeek: 0, time: '', timeLabel: '', language: 'Swahili', priestName: '', location: '', isSpecial: false, specialLabel: '', notes: '' });
     setEditingId(null);
     setShowForm(false);
+    setShowCustomSpecialLabel(false);
   };
 
   const handleEdit = (s: MassSchedule) => {
+    const isCustomLabel = !!s.specialLabel && !SPECIAL_LABELS.includes(s.specialLabel);
     setFormData({
       dayOfWeek: s.dayOfWeek, time: s.time, timeLabel: s.timeLabel || '', language: s.language,
       priestName: s.priestName || '', location: s.location || '',
       isSpecial: s.isSpecial || false, specialLabel: s.specialLabel || '', notes: s.notes || '',
     });
+    setShowCustomSpecialLabel(isCustomLabel);
     setEditingId(s.id);
     setShowForm(true);
   };
@@ -275,18 +279,46 @@ export default function SchedulesPage() {
                   </div>
 
                   {formData.isSpecial && (
-                    <div className="sm:col-span-2">
+                    <div className="sm:col-span-2 space-y-2">
                       <label className="block text-[11px] font-semibold uppercase tracking-wider text-ash dark:text-[#5a8070] mb-1.5">
-                        Lebo ya Misa Maalum
+                        Aina ya Misa Maalum
                       </label>
-                      <select
-                        value={formData.specialLabel}
-                        onChange={e => setFormData({ ...formData, specialLabel: e.target.value })}
-                        className="input-illuminated"
-                      >
-                        <option value="">Chagua…</option>
-                        {SPECIAL_LABELS.map(l => <option key={l} value={l}>{l}</option>)}
-                      </select>
+                      {!showCustomSpecialLabel ? (
+                        <select
+                          value={formData.specialLabel}
+                          onChange={e => {
+                            if (e.target.value === '__custom__') {
+                              setShowCustomSpecialLabel(true);
+                              setFormData({ ...formData, specialLabel: '' });
+                            } else {
+                              setFormData({ ...formData, specialLabel: e.target.value });
+                            }
+                          }}
+                          className="input-illuminated"
+                        >
+                          <option value="">Chagua aina…</option>
+                          {SPECIAL_LABELS.map(l => <option key={l} value={l}>{l}</option>)}
+                          <option value="__custom__">+ Ongeza Aina Mpya</option>
+                        </select>
+                      ) : (
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            autoFocus
+                            value={formData.specialLabel}
+                            onChange={e => setFormData({ ...formData, specialLabel: e.target.value })}
+                            className="input-illuminated flex-1"
+                            placeholder="Mf. Misa ya Watoto, Misa ya Vijana…"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => { setShowCustomSpecialLabel(false); setFormData({ ...formData, specialLabel: '' }); }}
+                            className="px-3 py-2 rounded-xl border border-[#e8e3d8] dark:border-[#253d2e] text-ash hover:border-[#c4933f] text-sm transition-colors"
+                          >
+                            Orodha
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 

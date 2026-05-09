@@ -22,6 +22,8 @@ interface ParishStats {
 interface Stats {
   totalParishes: number;
   totalAdmins: number;
+  totalUsers: number;
+  totalMpesaAmount: number;
   adminsByStatus: Record<string, number>;
   intentionsByStatus: Record<string, number>;
   totalNotices: number;
@@ -86,13 +88,13 @@ export default function SuperAnalyticsPage() {
       ]);
 
       const parishes = parishSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Parish[];
-      const admins = adminSnap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter((u: Record<string, unknown>) => u.role === 'PARISH_ADMIN') as User[];
+      const allUsers = adminSnap.docs.map(d => ({ id: d.id, ...d.data() })) as User[];
+      const admins = allUsers.filter(u => u.role === 'PARISH_ADMIN');
 
       const intentionsByStatus: Record<string, number> = {};
       const intentionsByParish: Record<string, number> = {};
       const pendingByParish: Record<string, number> = {};
+      let totalMpesaAmount = 0;
 
       intentionSnap.docs.forEach(d => {
         const data = d.data();
@@ -100,6 +102,7 @@ export default function SuperAnalyticsPage() {
         intentionsByStatus[status] = (intentionsByStatus[status] || 0) + 1;
         intentionsByParish[data.parishId] = (intentionsByParish[data.parishId] || 0) + 1;
         if (status === 'pending') pendingByParish[data.parishId] = (pendingByParish[data.parishId] || 0) + 1;
+        if (data.mpesaAmount) totalMpesaAmount += data.mpesaAmount;
       });
 
       const noticesByParish: Record<string, number> = {};
@@ -136,6 +139,8 @@ export default function SuperAnalyticsPage() {
       setStats({
         totalParishes: parishes.length,
         totalAdmins: admins.length,
+        totalUsers: allUsers.length,
+        totalMpesaAmount,
         adminsByStatus,
         intentionsByStatus,
         totalNotices: noticeSnap.size,
@@ -201,10 +206,10 @@ export default function SuperAnalyticsPage() {
               {/* Stat band */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {[
-                  { label: 'Parokia',     value: stats.totalParishes,  icon: 'location_city' },
-                  { label: 'Wasimamizi',  value: stats.totalAdmins,    icon: 'manage_accounts' },
-                  { label: 'Nia Zote',    value: totalIntentions,       icon: 'assignment' },
-                  { label: 'Matangazo',   value: stats.totalNotices,   icon: 'campaign' },
+                  { label: 'Watumiaji',   value: stats.totalUsers,     icon: 'group',           format: 'number' },
+                  { label: 'Makanisa',    value: stats.totalParishes,  icon: 'location_city',   format: 'number' },
+                  { label: 'Nia za Misa', value: totalIntentions,      icon: 'assignment',      format: 'number' },
+                  { label: 'Jumla M-Pesa',value: stats.totalMpesaAmount, icon: 'payments',      format: 'currency' },
                 ].map((card, i) => (
                   <div key={card.label} className={`card stat-card p-4 sm:p-5 anim-fade-up anim-delay-${i + 1}`}>
                     <div className="flex items-start justify-between mb-3">
@@ -214,9 +219,18 @@ export default function SuperAnalyticsPage() {
                       className="text-3xl sm:text-4xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] leading-none mb-1"
                       style={{ fontFamily: 'var(--font-cormorant)' }}
                     >
-                      {card.value}
+                      {card.format === 'currency'
+                        ? card.value >= 1_000_000
+                          ? `${(card.value / 1_000_000).toFixed(1)}M`
+                          : card.value >= 1_000
+                            ? `${(card.value / 1_000).toFixed(0)}K`
+                            : card.value.toLocaleString()
+                        : card.value}
                     </p>
                     <p className="text-[11px] text-ash dark:text-[#4d7a63] font-medium uppercase tracking-wide">{card.label}</p>
+                    {card.format === 'currency' && (
+                      <p className="text-[10px] text-ash mt-0.5">TZS {card.value.toLocaleString()}</p>
+                    )}
                   </div>
                 ))}
               </div>

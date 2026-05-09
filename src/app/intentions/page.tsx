@@ -48,6 +48,7 @@ export default function IntentionsPage() {
   const [intentions, setIntentions] = useState<MassIntention[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<typeof TABS[number]['key']>('all');
+  const [timePeriod, setTimePeriod] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -94,7 +95,28 @@ export default function IntentionsPage() {
     }
   };
 
-  const filteredIntentions = filter === 'all' ? intentions : intentions.filter(i => i.status === filter);
+  const byPeriod = (list: MassIntention[]) => {
+    const now = new Date();
+    if (timePeriod === 'today') {
+      return list.filter(i => {
+        const d = new Date(i.createdAt);
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+      });
+    }
+    if (timePeriod === 'week') {
+      const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
+      return list.filter(i => new Date(i.createdAt) >= weekAgo);
+    }
+    if (timePeriod === 'month') {
+      return list.filter(i => {
+        const d = new Date(i.createdAt);
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      });
+    }
+    return list;
+  };
+
+  const filteredIntentions = byPeriod(filter === 'all' ? intentions : intentions.filter(i => i.status === filter));
 
   const statusCounts = {
     all:       intentions.length,
@@ -123,7 +145,30 @@ export default function IntentionsPage() {
           <hr className="gold-rule mt-4 max-w-20" />
         </div>
 
-        {/* Filter tabs — scroll on mobile, full on sm+ */}
+        {/* Time period filter */}
+        <div className="flex gap-1.5 mb-3 anim-fade-up">
+          {([
+            { key: 'all',   label: 'Kipindi Chote' },
+            { key: 'today', label: 'Leo' },
+            { key: 'week',  label: 'Wiki Hii' },
+            { key: 'month', label: 'Mwezi Huu' },
+          ] as const).map(p => (
+            <button
+              key={p.key}
+              onClick={() => setTimePeriod(p.key)}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all shrink-0 ${
+                timePeriod === p.key
+                  ? 'bg-[#c4933f] text-white shadow-sm'
+                  : 'bg-white dark:bg-[#17291f] text-ash dark:text-[#6b9080] border border-[#e8e3d8] dark:border-[#253d2e] hover:border-[#c4933f]'
+              }`}
+            >
+              {p.key !== 'all' && <span className="material-symbols-outlined text-[13px]">calendar_today</span>}
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Status tabs — scroll on mobile, full on sm+ */}
         <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 anim-fade-up anim-delay-1">
           {TABS.map(tab => {
             const active = filter === tab.key;
