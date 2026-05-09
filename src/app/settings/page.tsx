@@ -15,13 +15,11 @@ import DashboardLayout from '@/components/DashboardLayout';
 export default function SettingsPage() {
   const { user, userData } = useAuth();
 
-  // Profile form
   const [displayName, setDisplayName] = useState(userData?.displayName || '');
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState('');
   const [profileError, setProfileError] = useState('');
 
-  // Password form
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -35,21 +33,19 @@ export default function SettingsPage() {
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !userData) return;
+    const trimmedName = displayName.trim();
+    if (displayName && !trimmedName) {
+      setProfileError('Jina haliwezi kuwa nafasi tu.');
+      return;
+    }
     try {
       setSavingProfile(true);
       setProfileSuccess('');
       setProfileError('');
-
-      const trimmedName = displayName.trim();
-
-      // Update Firebase Auth display name
       await updateProfile(user, { displayName: trimmedName || null });
-
-      // Update Firestore user doc
       await updateDoc(doc(db, 'users', userData.id), {
         displayName: trimmedName || null,
       });
-
       setProfileSuccess('Taarifa zako zimehifadhiwa.');
       setTimeout(() => setProfileSuccess(''), 4000);
     } catch (error) {
@@ -63,10 +59,8 @@ export default function SettingsPage() {
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-
     setPasswordError('');
     setPasswordSuccess('');
-
     if (newPassword.length < 8) {
       setPasswordError('Nenosiri jipya lazima liwe na herufi 8 au zaidi.');
       return;
@@ -75,16 +69,11 @@ export default function SettingsPage() {
       setPasswordError('Nenosiri jipya na uthibitisho hazilingani.');
       return;
     }
-
     try {
       setSavingPassword(true);
-
-      // Re-authenticate before changing password (Firebase requirement)
       const credential = EmailAuthProvider.credential(user.email!, currentPassword);
       await reauthenticateWithCredential(user, credential);
-
       await updatePassword(user, newPassword);
-
       setPasswordSuccess('Nenosiri limebadilishwa.');
       setCurrentPassword('');
       setNewPassword('');
@@ -93,11 +82,10 @@ export default function SettingsPage() {
     } catch (error: unknown) {
       let msg = 'Imeshindwa kubadilisha nenosiri. Tafadhali jaribu tena.';
       if (error instanceof Error) {
-        if (error.message.includes('wrong-password') || error.message.includes('invalid-credential')) {
+        if (error.message.includes('wrong-password') || error.message.includes('invalid-credential'))
           msg = 'Nenosiri la sasa si sahihi.';
-        } else if (error.message.includes('too-many-requests')) {
+        else if (error.message.includes('too-many-requests'))
           msg = 'Majaribio mengi sana. Tafadhali subiri kidogo.';
-        }
       }
       setPasswordError(msg);
     } finally {
@@ -105,30 +93,16 @@ export default function SettingsPage() {
     }
   };
 
-  const inputClass =
-    'w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white';
+  const labelClass = 'block text-[11px] uppercase tracking-wider font-semibold text-[#1a3d2e]/60 dark:text-[#e8e3d8]/60 mb-1.5';
 
   const PasswordInput = ({
-    label,
-    value,
-    onChange,
-    show,
-    onToggle,
-    placeholder,
-    autoComplete,
+    label, value, onChange, show, onToggle, placeholder, autoComplete,
   }: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-    show: boolean;
-    onToggle: () => void;
-    placeholder?: string;
-    autoComplete?: string;
+    label: string; value: string; onChange: (v: string) => void;
+    show: boolean; onToggle: () => void; placeholder?: string; autoComplete?: string;
   }) => (
     <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        {label}
-      </label>
+      <label className={labelClass}>{label}</label>
       <div className="relative">
         <input
           type={show ? 'text' : 'password'}
@@ -137,12 +111,12 @@ export default function SettingsPage() {
           onChange={(e) => onChange(e.target.value)}
           autoComplete={autoComplete}
           placeholder={placeholder}
-          className={inputClass + ' pr-12'}
+          className="input-illuminated pr-12"
         />
         <button
           type="button"
           onClick={onToggle}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-ash hover:text-[#1a3d2e] dark:hover:text-[#e8e3d8] transition-colors"
         >
           <span className="material-symbols-outlined text-xl">
             {show ? 'visibility_off' : 'visibility'}
@@ -156,40 +130,38 @@ export default function SettingsPage() {
     <DashboardLayout>
       <div className="p-4 sm:p-6 lg:p-8 max-w-2xl">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1a3d2e] dark:text-[#e8e3d8] mb-1">
             Mipangilio
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Simamia akaunti yako na mapendeleo
-          </p>
+          <p className="text-ash">Simamia akaunti yako na mapendeleo</p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
 
-          {/* Account Info (read-only) */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+          {/* Account Info */}
+          <div className="card rounded-2xl p-6">
+            <h2 className="text-lg font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] mb-4">
               Taarifa za Akaunti
             </h2>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
-                <span className="text-gray-500 dark:text-gray-400">Barua Pepe</span>
-                <span className="font-medium text-gray-900 dark:text-white">{userData?.email}</span>
+            <div className="space-y-0 text-sm">
+              <div className="flex justify-between items-center py-3 border-b border-[#e8e3d8] dark:border-[#253d2e]">
+                <span className="text-ash">Barua Pepe</span>
+                <span className="font-medium text-[#1a3d2e] dark:text-[#e8e3d8]">{userData?.email}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
-                <span className="text-gray-500 dark:text-gray-400">Jukumu</span>
+              <div className="flex justify-between items-center py-3 border-b border-[#e8e3d8] dark:border-[#253d2e]">
+                <span className="text-ash">Jukumu</span>
                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                   userData?.role === 'SUPER_ADMIN'
                     ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
-                    : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                    : 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
                 }`}>
                   {userData?.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Parish Admin'}
                 </span>
               </div>
               {userData?.parishId && (
-                <div className="flex justify-between py-2">
-                  <span className="text-gray-500 dark:text-gray-400">Kitambulisho cha Parokia</span>
-                  <span className="font-mono text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-ash">Kitambulisho cha Parokia</span>
+                  <span className="font-mono text-xs text-ash bg-[#e8e3d8] dark:bg-[#253d2e] px-2 py-0.5 rounded">
                     {userData.parishId}
                   </span>
                 </div>
@@ -198,41 +170,38 @@ export default function SettingsPage() {
           </div>
 
           {/* Edit Profile */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+          <div className="card rounded-2xl p-6">
+            <h2 className="text-lg font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] mb-4">
               Hariri Wasifu
             </h2>
 
             {profileSuccess && (
-              <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <p className="text-sm text-green-600 dark:text-green-400">{profileSuccess}</p>
+              <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 rounded-xl">
+                <p className="text-sm text-green-700 dark:text-green-400">{profileSuccess}</p>
               </div>
             )}
             {profileError && (
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-xl">
                 <p className="text-sm text-red-600 dark:text-red-400">{profileError}</p>
               </div>
             )}
 
             <form onSubmit={handleProfileSave} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Jina Kamili
-                </label>
+                <label className={labelClass}>Jina Kamili</label>
                 <input
                   type="text"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className={inputClass}
+                  className="input-illuminated"
                   placeholder="Padre Petro Makundi"
                   autoComplete="name"
                 />
               </div>
-
               <button
                 type="submit"
                 disabled={savingProfile}
-                className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                className="btn-gold disabled:opacity-50"
               >
                 {savingProfile ? (
                   <>
@@ -250,21 +219,21 @@ export default function SettingsPage() {
           </div>
 
           {/* Change Password */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+          <div className="card rounded-2xl p-6">
+            <h2 className="text-lg font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] mb-1">
               Badilisha Nenosiri
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <p className="text-sm text-ash mb-5">
               Lazima uweke nenosiri la sasa ili kubadilisha.
             </p>
 
             {passwordSuccess && (
-              <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <p className="text-sm text-green-600 dark:text-green-400">{passwordSuccess}</p>
+              <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 rounded-xl">
+                <p className="text-sm text-green-700 dark:text-green-400">{passwordSuccess}</p>
               </div>
             )}
             {passwordError && (
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-xl">
                 <p className="text-sm text-red-600 dark:text-red-400">{passwordError}</p>
               </div>
             )}
@@ -295,11 +264,10 @@ export default function SettingsPage() {
                 onToggle={() => setShowConfirmPw(!showConfirmPw)}
                 autoComplete="new-password"
               />
-
               <button
                 type="submit"
                 disabled={savingPassword}
-                className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                className="btn-gold disabled:opacity-50"
               >
                 {savingPassword ? (
                   <>
@@ -317,15 +285,12 @@ export default function SettingsPage() {
           </div>
 
           {/* Help */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Msaada</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
+          <div className="card rounded-2xl p-6">
+            <h2 className="text-lg font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] mb-2">Msaada</h2>
+            <p className="text-ash mb-4 text-sm">
               Unahitaji msaada? Wasiliana na msimamizi wa jimbo lako au tuma barua pepe.
             </p>
-            <a
-              href="mailto:support@misa.app"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors text-sm"
-            >
+            <a href="mailto:support@misa.app" className="btn-gold text-sm">
               <span className="material-symbols-outlined text-base">email</span>
               Wasiliana na Msaada
             </a>

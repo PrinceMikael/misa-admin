@@ -135,22 +135,6 @@ export default function DashboardPage() {
               Inapakia…
             </p>
           </div>
-        ) : !userData?.parishId ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-              style={{ background: 'linear-gradient(135deg, #1a3d2e, #254d3a)' }}
-            >
-              <span className="material-symbols-outlined text-[#c4933f] text-3xl">church</span>
-            </div>
-            <h2 className="text-2xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] mb-2"
-                style={{ fontFamily: 'var(--font-cormorant)' }}>
-              Haujapewa Parokia
-            </h2>
-            <p className="text-ash dark:text-[#6b9080] max-w-sm text-sm leading-relaxed">
-              Akaunti yako bado haijaunganishwa na parokia yoyote. Wasiliana na msimamizi mkuu ili akupange parokia.
-            </p>
-          </div>
         ) : (
           <>
             {/* Stat band */}

@@ -49,6 +49,8 @@ const STATUS_STYLES: Record<string, string> = {
   disabled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
 };
 
+const labelClass = 'block text-[11px] uppercase tracking-wider font-semibold text-[#1a3d2e]/60 dark:text-[#e8e3d8]/60 mb-1.5';
+
 export default function SuperAdminsPage() {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -188,7 +190,6 @@ export default function SuperAdminsPage() {
     setResendCopied(false);
 
     try {
-      // Invalidate all existing unused tokens for this user
       const oldSnap = await getDocs(query(
         collection(db, 'invite_tokens'),
         where('uid', '==', admin.id)
@@ -201,7 +202,6 @@ export default function SuperAdminsPage() {
         }));
       await Promise.all(invalidations);
 
-      // Create fresh token
       const token = generateToken();
       const expiresAt = Timestamp.fromDate(new Date(Date.now() + 60 * 60 * 1000));
       await addDoc(collection(db, 'invite_tokens'), {
@@ -213,9 +213,7 @@ export default function SuperAdminsPage() {
         createdAt: Timestamp.now(),
       });
 
-      // Send a new password reset email (user already exists in Auth)
       await sendPasswordResetEmail(auth, admin.email);
-
       setResendToken(token);
     } catch (err) {
       console.error('Resend error:', err);
@@ -287,36 +285,35 @@ Karibu sana kwenye familia ya Misa! 🙏`;
     (a.parishName || '').toLowerCase().includes(search.toLowerCase())
   );
 
-  const inputClass =
-    'w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white';
-
   return (
     <SuperAdminRoute>
       <DashboardLayout>
         <div className="p-4 sm:p-6 lg:p-8">
 
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-start justify-between gap-4 mb-6 anim-fade-up">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+              <h1
+                className="text-4xl sm:text-5xl font-semibold leading-none text-[#1a3d2e] dark:text-[#e8e3d8]"
+                style={{ fontFamily: 'var(--font-cormorant)' }}
+              >
                 Wasimamizi wa Parokia
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-sm text-ash dark:text-[#6b9080] mt-2">
                 {loading ? '...' : `Wasimamizi ${admins.length} wameandikishwa`}
               </p>
+              <hr className="gold-rule mt-4 max-w-20" />
             </div>
-            <button
-              onClick={openInvite}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors"
-            >
-              <span className="material-symbols-outlined">person_add</span>
-              Alika Msimamizi
+            <button onClick={openInvite} className="btn-gold shrink-0 mt-1">
+              <span className="material-symbols-outlined text-[18px]">person_add</span>
+              <span className="hidden sm:inline">Alika Msimamizi</span>
+              <span className="sm:hidden">Alika</span>
             </button>
           </div>
 
           {/* Search */}
           <div className="relative mb-6 max-w-sm">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ash text-xl pointer-events-none">
               search
             </span>
             <input
@@ -324,70 +321,67 @@ Karibu sana kwenye familia ya Misa! 🙏`;
               placeholder="Tafuta msimamizi..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+              className="input-illuminated pl-10"
             />
           </div>
 
           {/* Table */}
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <div className="relative">
-                <div className="w-12 h-12 border-4 border-gray-200 dark:border-gray-700 rounded-full" />
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0 left-0" />
+              <div className="relative w-12 h-12">
+                <div className="absolute inset-0 rounded-full border-4 border-[#e8e3d8] dark:border-[#253d2e]" />
+                <div className="absolute inset-0 rounded-full border-4 border-gold border-t-transparent animate-spin" />
               </div>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-20">
-              <span className="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600">manage_accounts</span>
-              <p className="text-gray-500 dark:text-gray-400 mt-3">
+            <div className="card rounded-2xl flex flex-col items-center justify-center py-16 text-center">
+              <span className="material-symbols-outlined text-5xl text-ash-light dark:text-[#2e4a38] mb-3">manage_accounts</span>
+              <p className="text-ash italic mb-4" style={{ fontFamily: 'var(--font-cormorant)' }}>
                 {search ? 'Hakuna msimamizi anayelingana na utafutaji.' : 'Bado hakuna msimamizi aliyealikwa.'}
               </p>
               {!search && (
-                <button
-                  onClick={openInvite}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium"
-                >
-                  <span className="material-symbols-outlined text-sm">person_add</span>
+                <button onClick={openInvite} className="btn-gold">
+                  <span className="material-symbols-outlined text-[18px]">person_add</span>
                   Alika wa Kwanza
                 </button>
               )}
             </div>
           ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+            <div className="card rounded-xl overflow-hidden">
 
               {/* Desktop table */}
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <tr className="border-b border-[#e8e3d8] dark:border-[#253d2e]">
                       {['Msimamizi', 'Parokia', 'Hali', 'Tarehe ya Kujiandikisha', ''].map(h => (
-                        <th key={h} className="text-left px-6 py-4 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        <th key={h} className="text-left px-6 py-4 text-[11px] font-semibold uppercase tracking-wider text-ash">
                           {h}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  <tbody className="divide-y divide-[#e8e3d8] dark:divide-[#253d2e]">
                     {filtered.map(admin => {
                       const status = admin.status || 'active';
                       return (
-                        <tr key={admin.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <tr key={admin.id} className="hover:bg-parchment/50 dark:hover:bg-[#1a2e23]/50 transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                <span className="material-symbols-outlined text-primary text-lg">person</span>
+                              <div className="w-9 h-9 rounded-full bg-[#1a3d2e]/10 dark:bg-[#e8e3d8]/10 flex items-center justify-center shrink-0">
+                                <span className="material-symbols-outlined text-[#1a3d2e] dark:text-[#e8e3d8] text-lg">person</span>
                               </div>
                               <div>
-                                <p className="font-medium text-gray-900 dark:text-white text-sm">
+                                <p className="font-medium text-[#1a3d2e] dark:text-[#e8e3d8] text-sm">
                                   {admin.displayName || '—'}
                                 </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{admin.email}</p>
+                                <p className="text-xs text-ash">{admin.email}</p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                          <td className="px-6 py-4 text-sm text-[#1a3d2e]/80 dark:text-[#e8e3d8]/70">
                             {admin.parishName ?? (
-                              <span className="italic text-gray-400 dark:text-gray-500">Haijaunganishwa</span>
+                              <span className="italic text-ash">Haijaunganishwa</span>
                             )}
                           </td>
                           <td className="px-6 py-4">
@@ -395,7 +389,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                               {STATUS_LABELS[status] || status}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                          <td className="px-6 py-4 text-sm text-ash">
                             {admin.createdAt.toLocaleDateString('sw-TZ', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </td>
                           <td className="px-6 py-4">
@@ -443,24 +437,24 @@ Karibu sana kwenye familia ya Misa! 🙏`;
               </div>
 
               {/* Mobile card list */}
-              <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
+              <div className="sm:hidden divide-y divide-[#e8e3d8] dark:divide-[#253d2e]">
                 {filtered.map(admin => {
                   const status = admin.status || 'active';
                   return (
                     <div key={admin.id} className="p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                            <span className="material-symbols-outlined text-primary">person</span>
+                          <div className="w-10 h-10 rounded-full bg-[#1a3d2e]/10 dark:bg-[#e8e3d8]/10 flex items-center justify-center shrink-0">
+                            <span className="material-symbols-outlined text-[#1a3d2e] dark:text-[#e8e3d8]">person</span>
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                            <p className="font-medium text-[#1a3d2e] dark:text-[#e8e3d8] text-sm truncate">
                               {admin.displayName || admin.email}
                             </p>
                             {admin.displayName && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{admin.email}</p>
+                              <p className="text-xs text-ash truncate">{admin.email}</p>
                             )}
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                            <p className="text-xs text-ash mt-0.5">
                               {admin.parishName ?? <span className="italic">Haijaunganishwa</span>}
                             </p>
                           </div>
@@ -515,11 +509,19 @@ Karibu sana kwenye familia ya Misa! 🙏`;
 
         {/* ── Invite Modal ── */}
         {showInviteModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Alika Msimamizi Mpya</h2>
-                <button onClick={closeInviteModal} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm">
+            <div className="card w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl border border-[#e8e3d8] dark:border-[#253d2e]">
+              <div className="px-6 py-4 border-b border-[#e8e3d8] dark:border-[#253d2e] flex items-center justify-between">
+                <h2
+                  className="text-2xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8]"
+                  style={{ fontFamily: 'var(--font-cormorant)' }}
+                >
+                  Alika Msimamizi Mpya
+                </h2>
+                <button
+                  onClick={closeInviteModal}
+                  className="p-2 rounded-xl text-ash hover:text-[#1a3d2e] dark:hover:text-[#e8e3d8] hover:bg-parchment dark:hover:bg-[#253d2e]/50 transition-colors"
+                >
                   <span className="material-symbols-outlined">close</span>
                 </button>
               </div>
@@ -548,11 +550,11 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                     </p>
                   </div>
 
-                  <div className="p-4 bg-gray-50 dark:bg-gray-700/60 rounded-xl border border-gray-200 dark:border-gray-600">
-                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+                  <div className="p-4 bg-parchment dark:bg-[#1a2e23] rounded-xl border border-[#e8e3d8] dark:border-[#253d2e]">
+                    <p className={`${labelClass} mb-3`}>
                       Ujumbe wa WhatsApp / SMS
                     </p>
-                    <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed font-sans">
+                    <pre className="text-xs text-[#1a3d2e] dark:text-[#e8e3d8] whitespace-pre-wrap leading-relaxed font-sans">
                       {buildWhatsappMessage(inviteEmail, inviteDisplayName, inviteToken)}
                     </pre>
                     <button
@@ -565,13 +567,17 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                     </button>
                   </div>
 
-                  <button type="button" onClick={closeInviteModal} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                  <button
+                    type="button"
+                    onClick={closeInviteModal}
+                    className="w-full px-4 py-2.5 border border-[#e8e3d8] dark:border-[#253d2e] text-ash font-medium rounded-xl hover:bg-parchment dark:hover:bg-[#253d2e]/50 transition-colors"
+                  >
                     Funga
                   </button>
                 </div>
               ) : (
                 <form onSubmit={handleInvite} className="p-6 space-y-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <p className="text-sm text-ash">
                     Msimamizi atapata barua pepe ya kuweka nenosiri na kiungo cha mwaliko cha matumizi moja.
                   </p>
 
@@ -582,29 +588,46 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                   )}
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Barua Pepe <span className="text-red-500">*</span>
+                    <label className={labelClass}>
+                      Barua Pepe <span className="text-[#c4933f]">*</span>
                     </label>
-                    <input type="email" required value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
-                      className={inputClass} placeholder="padre@parokia.com" />
+                    <input
+                      type="email"
+                      required
+                      value={inviteEmail}
+                      onChange={e => setInviteEmail(e.target.value)}
+                      className="input-illuminated"
+                      placeholder="padre@parokia.com"
+                    />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Jina Kamili</label>
-                    <input type="text" value={inviteDisplayName} onChange={e => setInviteDisplayName(e.target.value)}
-                      className={inputClass} placeholder="Padre Petro Makundi" />
+                    <label className={labelClass}>Jina Kamili</label>
+                    <input
+                      type="text"
+                      value={inviteDisplayName}
+                      onChange={e => setInviteDisplayName(e.target.value)}
+                      className="input-illuminated"
+                      placeholder="Padre Petro Makundi"
+                    />
                   </div>
 
                   <div className="flex gap-3 pt-2">
-                    <button type="button" onClick={closeInviteModal}
-                      className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <button
+                      type="button"
+                      onClick={closeInviteModal}
+                      className="flex-1 px-4 py-2.5 border border-[#e8e3d8] dark:border-[#253d2e] text-ash font-medium rounded-xl hover:bg-parchment dark:hover:bg-[#253d2e]/50 transition-colors"
+                    >
                       Ghairi
                     </button>
-                    <button type="submit" disabled={inviting}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors disabled:opacity-50">
+                    <button
+                      type="submit"
+                      disabled={inviting}
+                      className="flex-1 btn-gold justify-center disabled:opacity-50"
+                    >
                       {inviting
-                        ? <><span className="material-symbols-outlined animate-spin">progress_activity</span>Inatuma...</>
-                        : <><span className="material-symbols-outlined">send</span>Tuma Mwaliko</>}
+                        ? <><span className="material-symbols-outlined animate-spin text-base">progress_activity</span>Inatuma…</>
+                        : <><span className="material-symbols-outlined text-base">send</span>Tuma Mwaliko</>}
                     </button>
                   </div>
                 </form>
@@ -615,11 +638,20 @@ Karibu sana kwenye familia ya Misa! 🙏`;
 
         {/* ── Resend Modal ── */}
         {resendTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Tuma Mwaliko Upya</h2>
-                <button onClick={closeResendModal} disabled={resending} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm">
+            <div className="card w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl border border-[#e8e3d8] dark:border-[#253d2e]">
+              <div className="px-6 py-4 border-b border-[#e8e3d8] dark:border-[#253d2e] flex items-center justify-between">
+                <h2
+                  className="text-2xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8]"
+                  style={{ fontFamily: 'var(--font-cormorant)' }}
+                >
+                  Tuma Mwaliko Upya
+                </h2>
+                <button
+                  onClick={closeResendModal}
+                  disabled={resending}
+                  className="p-2 rounded-xl text-ash hover:text-[#1a3d2e] dark:hover:text-[#e8e3d8] hover:bg-parchment dark:hover:bg-[#253d2e]/50 transition-colors disabled:opacity-50"
+                >
                   <span className="material-symbols-outlined">close</span>
                 </button>
               </div>
@@ -628,10 +660,10 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                 {resending ? (
                   <div className="flex flex-col items-center py-8 gap-3">
                     <div className="relative w-10 h-10">
-                      <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
-                      <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                      <div className="absolute inset-0 rounded-full border-2 border-[#e8e3d8] dark:border-[#253d2e]" />
+                      <div className="absolute inset-0 rounded-full border-2 border-gold border-t-transparent animate-spin" />
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Inatuma mwaliko mpya…</p>
+                    <p className="text-sm text-ash italic" style={{ fontFamily: 'var(--font-cormorant)' }}>Inatuma mwaliko mpya…</p>
                   </div>
                 ) : resendToken ? (
                   <div className="space-y-4">
@@ -657,11 +689,11 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                       </p>
                     </div>
 
-                    <div className="p-4 bg-gray-50 dark:bg-gray-700/60 rounded-xl border border-gray-200 dark:border-gray-600">
-                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+                    <div className="p-4 bg-parchment dark:bg-[#1a2e23] rounded-xl border border-[#e8e3d8] dark:border-[#253d2e]">
+                      <p className={`${labelClass} mb-3`}>
                         Ujumbe wa WhatsApp / SMS
                       </p>
-                      <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed font-sans">
+                      <pre className="text-xs text-[#1a3d2e] dark:text-[#e8e3d8] whitespace-pre-wrap leading-relaxed font-sans">
                         {buildWhatsappMessage(resendTarget.email, resendTarget.displayName, resendToken)}
                       </pre>
                       <button
@@ -674,8 +706,11 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                       </button>
                     </div>
 
-                    <button type="button" onClick={closeResendModal}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <button
+                      type="button"
+                      onClick={closeResendModal}
+                      className="w-full px-4 py-2.5 border border-[#e8e3d8] dark:border-[#253d2e] text-ash font-medium rounded-xl hover:bg-parchment dark:hover:bg-[#253d2e]/50 transition-colors"
+                    >
                       Funga
                     </button>
                   </div>
@@ -687,8 +722,8 @@ Karibu sana kwenye familia ya Misa! 🙏`;
 
         {/* ── Action Confirmation Modal ── */}
         {actionTarget && actionType && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="card rounded-2xl shadow-2xl border border-[#e8e3d8] dark:border-[#253d2e] w-full max-w-sm p-6">
               <div className={`flex items-center justify-center w-14 h-14 rounded-full mx-auto mb-4 ${
                 actionType === 'delete'   ? 'bg-red-100 dark:bg-red-900/30' :
                 actionType === 'disable'  ? 'bg-yellow-100 dark:bg-yellow-900/30' :
@@ -703,14 +738,17 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                 </span>
               </div>
 
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white text-center">
+              <h3
+                className="text-2xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] text-center"
+                style={{ fontFamily: 'var(--font-cormorant)' }}
+              >
                 {actionType === 'delete' ? 'Futa Msimamizi?' : actionType === 'disable' ? 'Zuia Msimamizi?' : 'Wezesha Msimamizi?'}
               </h3>
 
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-2">
+              <p className="text-sm text-ash text-center mt-2">
                 {actionType === 'delete' ? 'Una uhakika unataka kufuta akaunti ya' :
                  actionType === 'disable' ? 'Una uhakika unataka kumzuia' : 'Una uhakika unataka kumwezesha'}{' '}
-                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                <span className="font-semibold text-[#1a3d2e] dark:text-[#e8e3d8]">
                   {actionTarget.displayName || actionTarget.email}
                 </span>
                 {actionType === 'delete' ? '? Hatua hii haiwezi kutenduliwa.' : '?'}
@@ -718,7 +756,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
 
               {actionType === 'delete' && (
                 <p className="mt-3 text-xs text-center text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2">
-                  Kumbuka: akaunti ya barua pepe itabaki. Kutuma mwaliko kwa barua pepe hii tena haitafanikiwa — tumia "Tuma Upya" badala yake.
+                  Kumbuka: akaunti ya barua pepe itabaki. Kutuma mwaliko kwa barua pepe hii tena haitafanikiwa — tumia &quot;Tuma Upya&quot; badala yake.
                 </p>
               )}
 
@@ -726,14 +764,14 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                 <button
                   onClick={() => { setActionTarget(null); setActionType(null); }}
                   disabled={actioning}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="flex-1 px-4 py-2.5 border border-[#e8e3d8] dark:border-[#253d2e] text-ash font-medium rounded-xl hover:bg-parchment dark:hover:bg-[#253d2e]/50 transition-colors disabled:opacity-50"
                 >
                   Ghairi
                 </button>
                 <button
                   onClick={handleAction}
                   disabled={actioning}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white font-medium rounded-lg transition-colors disabled:opacity-50 ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white font-medium rounded-xl transition-colors disabled:opacity-50 ${
                     actionType === 'delete'  ? 'bg-red-600 hover:bg-red-700' :
                     actionType === 'disable' ? 'bg-yellow-500 hover:bg-yellow-600' :
                                                'bg-green-600 hover:bg-green-700'

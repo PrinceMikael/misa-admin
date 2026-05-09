@@ -1,0 +1,82 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function userExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isParishAdmin() {
+      return isAuthenticated() && userExists() && getUserData().role == 'PARISH_ADMIN';
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && userExists() && getUserData().role == 'SUPER_ADMIN';
+    }
+
+    function ownsParish(parishId) {
+      return isAuthenticated() && userExists() && getUserData().parishId == parishId;
+    }
+
+    // PARISHES — public read, parish admin creates (onboarding), owns-parish update
+    match /parishes/{parishId} {
+      allow read: if true;
+      allow create: if isParishAdmin() || isSuperAdmin();
+      allow update: if ownsParish(parishId) || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // MASS_SCHEDULES — public read, scoped write by parishId
+    match /mass_schedules/{scheduleId} {
+      allow read: if true;
+      allow create: if (isParishAdmin() && ownsParish(request.resource.data.parishId)) || isSuperAdmin();
+      allow update, delete: if (isParishAdmin() && ownsParish(resource.data.parishId)) || isSuperAdmin();
+    }
+
+    // NOTICES — public read, scoped write by parishId
+    match /notices/{noticeId} {
+      allow read: if true;
+      allow create: if (isParishAdmin() && ownsParish(request.resource.data.parishId)) || isSuperAdmin();
+      allow update: if (isParishAdmin() && ownsParish(resource.data.parishId)) || isSuperAdmin();
+      allow delete: if (isParishAdmin() && ownsParish(resource.data.parishId)) || isSuperAdmin();
+    }
+
+    // MASS_INTENTIONS — public create (mwamini), parish-scoped read/update
+    match /mass_intentions/{intentionId} {
+      allow create: if request.resource.data.status == 'pending' &&
+                      request.resource.data.intentionText is string &&
+                      request.resource.data.parishId is string;
+      allow read: if (isParishAdmin() && ownsParish(resource.data.parishId)) || isSuperAdmin();
+      allow update: if (isParishAdmin() && ownsParish(resource.data.parishId)) || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // USERS — self-read, super admin full access, self-update (cannot change own role)
+    match /users/{userId} {
+      allow read: if (isAuthenticated() && request.auth.uid == userId) || isSuperAdmin();
+      allow create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin() ||
+                      (isAuthenticated() && request.auth.uid == userId &&
+                       request.resource.data.role == resource.data.role);
+    }
+
+    // INVITE_TOKENS — super admin creates; any authenticated user can read (token is 48-char secret);
+    // intended user can accept (mark used) once only
+    match /invite_tokens/{tokenId} {
+      allow create: if isSuperAdmin();
+      allow read: if isAuthenticated();
+      allow update: if isSuperAdmin() ||
+                      (isAuthenticated() && resource.data.uid == request.auth.uid && !resource.data.used);
+      allow delete: if isSuperAdmin();
+    }
+  }
+}

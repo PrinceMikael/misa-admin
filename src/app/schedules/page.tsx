@@ -27,6 +27,7 @@ export default function SchedulesPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [showCustomSpecialLabel, setShowCustomSpecialLabel] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -104,6 +105,7 @@ export default function SchedulesPage() {
     e.preventDefault();
     if (!userData?.parishId) return;
     try {
+      setSaving(true);
       const data: Record<string, unknown> = {
         parishId: userData.parishId,
         dayOfWeek: formData.dayOfWeek,
@@ -129,6 +131,8 @@ export default function SchedulesPage() {
     } catch (error) {
       console.error('Error saving:', error);
       alert('Imeshindwa kuhifadhi');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -344,8 +348,8 @@ export default function SchedulesPage() {
                   >
                     Ghairi
                   </button>
-                  <button type="submit" className="flex-1 btn-gold justify-center">
-                    {editingId ? 'Sasisha' : 'Ongeza'}
+                  <button type="submit" disabled={saving} className="flex-1 btn-gold justify-center disabled:opacity-50">
+                    {saving ? 'Inahifadhi…' : editingId ? 'Sasisha' : 'Ongeza'}
                   </button>
                 </div>
               </form>

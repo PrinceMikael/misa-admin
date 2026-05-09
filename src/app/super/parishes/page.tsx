@@ -11,7 +11,6 @@ import {
   Timestamp,
   orderBy,
   query,
-  where,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -34,6 +33,8 @@ const emptyForm = {
 };
 
 type FormData = typeof emptyForm;
+
+const labelClass = 'block text-[11px] uppercase tracking-wider font-semibold text-[#1a3d2e]/60 dark:text-[#e8e3d8]/60 mb-1.5';
 
 export default function SuperParishesPage() {
   const [parishes, setParishes] = useState<Parish[]>([]);
@@ -72,9 +73,7 @@ export default function SuperParishesPage() {
     }
   };
 
-  useEffect(() => {
-    loadParishes();
-  }, []);
+  useEffect(() => { loadParishes(); }, []);
 
   const openCreate = () => {
     setEditingParish(null);
@@ -132,12 +131,8 @@ export default function SuperParishesPage() {
       if (editingParish) {
         await updateDoc(doc(db, 'parishes', editingParish.id), parishData);
       } else {
-        await addDoc(collection(db, 'parishes'), {
-          ...parishData,
-          createdAt: Timestamp.now(),
-        });
+        await addDoc(collection(db, 'parishes'), { ...parishData, createdAt: Timestamp.now() });
       }
-
       closeModal();
       await loadParishes();
     } catch (error) {
@@ -199,27 +194,22 @@ export default function SuperParishesPage() {
       p.region?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const inputClass =
-    'w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white';
-
   return (
     <SuperAdminRoute>
       <DashboardLayout>
         <div className="p-4 sm:p-6 lg:p-8">
+
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#1a3d2e] dark:text-[#e8e3d8]">
                 Parokia Zote
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-ash mt-1">
                 {loading ? '...' : `Parokia ${parishes.length} zimeandikishwa`}
               </p>
             </div>
-            <button
-              onClick={openCreate}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors"
-            >
+            <button onClick={openCreate} className="btn-gold">
               <span className="material-symbols-outlined">add</span>
               Ongeza Parokia
             </button>
@@ -227,7 +217,7 @@ export default function SuperParishesPage() {
 
           {/* Search */}
           <div className="relative mb-6 max-w-sm">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ash text-xl">
               search
             </span>
             <input
@@ -235,7 +225,7 @@ export default function SuperParishesPage() {
               placeholder="Tafuta parokia..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white"
+              className="input-illuminated pl-10"
             />
           </div>
 
@@ -243,22 +233,22 @@ export default function SuperParishesPage() {
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <div className="relative">
-                <div className="w-12 h-12 border-4 border-gray-200 dark:border-gray-700 rounded-full" />
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin absolute top-0 left-0" />
+                <div className="w-12 h-12 border-4 border-[#e8e3d8] dark:border-[#253d2e] rounded-full" />
+                <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin absolute top-0 left-0" />
               </div>
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-20">
-              <span className="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600">
+              <span className="material-symbols-outlined text-5xl text-[#1a3d2e]/20 dark:text-[#e8e3d8]/20">
                 location_city
               </span>
-              <p className="text-gray-500 dark:text-gray-400 mt-3">
+              <p className="text-ash mt-3">
                 {search ? 'Hakuna parokia inayolingana na utafutaji.' : 'Bado hakuna parokia iliyoandikishwa.'}
               </p>
               {!search && (
                 <button
                   onClick={openCreate}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium"
+                  className="btn-gold mt-4 text-sm"
                 >
                   <span className="material-symbols-outlined text-sm">add</span>
                   Ongeza ya Kwanza
@@ -268,20 +258,18 @@ export default function SuperParishesPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filtered.map((parish) => (
-                <div
-                  key={parish.id}
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 flex flex-col gap-3"
-                >
+                <div key={parish.id} className="card rounded-2xl p-5 flex flex-col gap-3">
+
                   {/* Parish image or placeholder */}
                   {parish.imageUrl ? (
                     <img
                       src={parish.imageUrl}
                       alt={parish.name}
-                      className="w-full h-36 object-cover rounded-lg"
+                      className="w-full h-36 object-cover rounded-xl"
                     />
                   ) : (
-                    <div className="w-full h-36 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                      <span className="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-500">
+                    <div className="w-full h-36 bg-[#e8e3d8] dark:bg-[#253d2e] rounded-xl flex items-center justify-center">
+                      <span className="material-symbols-outlined text-4xl text-[#1a3d2e]/25 dark:text-[#e8e3d8]/25">
                         church
                       </span>
                     </div>
@@ -289,31 +277,27 @@ export default function SuperParishesPage() {
 
                   {/* Info */}
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 dark:text-white text-lg leading-snug">
+                    <h3 className="font-bold text-[#1a3d2e] dark:text-[#e8e3d8] text-lg leading-snug">
                       {parish.name}
                     </h3>
                     {parish.nameSwahili && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{parish.nameSwahili}</p>
+                      <p className="text-sm text-ash">{parish.nameSwahili}</p>
                     )}
 
-                    <div className="mt-3 space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="mt-3 space-y-1.5 text-sm text-ash">
                       <div className="flex items-start gap-2">
-                        <span className="material-symbols-outlined text-base mt-0.5 text-gray-400">domain</span>
+                        <span className="material-symbols-outlined text-base mt-0.5 text-ash">domain</span>
                         <span>{parish.diocese}</span>
                       </div>
                       {parish.region && (
                         <div className="flex items-start gap-2">
-                          <span className="material-symbols-outlined text-base mt-0.5 text-gray-400">
-                            map
-                          </span>
+                          <span className="material-symbols-outlined text-base mt-0.5 text-ash">map</span>
                           <span>{parish.region}</span>
                         </div>
                       )}
                       {parish.priestName && (
                         <div className="flex items-start gap-2">
-                          <span className="material-symbols-outlined text-base mt-0.5 text-gray-400">
-                            person
-                          </span>
+                          <span className="material-symbols-outlined text-base mt-0.5 text-ash">person</span>
                           <span>{parish.priestName}</span>
                         </div>
                       )}
@@ -345,7 +329,7 @@ export default function SuperParishesPage() {
 
                     {/* Parish ID chip */}
                     <div className="mt-3">
-                      <span className="inline-block px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs font-mono rounded">
+                      <span className="inline-block px-2 py-0.5 bg-[#e8e3d8] dark:bg-[#253d2e] text-ash text-xs font-mono rounded-lg">
                         {parish.id}
                       </span>
                     </div>
@@ -353,14 +337,14 @@ export default function SuperParishesPage() {
 
                   {/* Location approval actions */}
                   {parish.locationStatus === 'pending' && parish.location && (
-                    <div className="mx-0 px-0 pt-2 pb-1">
-                      <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 mb-2">
+                    <div className="pt-2 pb-1">
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/30 rounded-xl p-3 mb-2">
                         <p className="text-xs font-medium text-yellow-800 dark:text-yellow-300 mb-1">Eneo jipya lililotumwa:</p>
                         <a
                           href={`https://www.google.com/maps?q=${parish.location.latitude},${parish.location.longitude}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                          className="text-xs text-[#c4933f] hover:underline inline-flex items-center gap-1"
                         >
                           <span className="material-symbols-outlined text-[12px]">open_in_new</span>
                           {parish.location.latitude.toFixed(5)}, {parish.location.longitude.toFixed(5)}
@@ -386,17 +370,17 @@ export default function SuperParishesPage() {
                   )}
 
                   {/* Actions */}
-                  <div className="flex gap-2 pt-1 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex gap-2 pt-2 border-t border-[#e8e3d8] dark:border-[#253d2e]">
                     <button
                       onClick={() => openEdit(parish)}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-[#1a3d2e] dark:text-[#e8e3d8] hover:bg-parchment-deep dark:hover:bg-[#253d2e] rounded-xl transition-colors"
                     >
                       <span className="material-symbols-outlined text-base">edit</span>
                       Hariri
                     </button>
                     <button
                       onClick={() => setDeleteTarget(parish)}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
                     >
                       <span className="material-symbols-outlined text-base">delete</span>
                       Futa
@@ -411,197 +395,179 @@ export default function SuperParishesPage() {
         {/* Create / Edit Modal */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-white dark:bg-gray-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between rounded-t-2xl">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            <div className="card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-parchment dark:bg-[#17291f] px-6 py-4 border-b border-[#e8e3d8] dark:border-[#253d2e] flex items-center justify-between rounded-t-2xl">
+                <h2 className="text-xl font-bold text-[#1a3d2e] dark:text-[#e8e3d8]">
                   {editingParish ? 'Hariri Parokia' : 'Ongeza Parokia Mpya'}
                 </h2>
                 <button
                   onClick={closeModal}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500"
+                  className="p-2 hover:bg-[#e8e3d8] dark:hover:bg-[#253d2e] rounded-xl text-ash transition-colors"
                 >
                   <span className="material-symbols-outlined">close</span>
                 </button>
               </div>
 
               <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                {/* Basic */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Jina (Kiingereza) <span className="text-red-500">*</span>
+                    <label className={labelClass}>
+                      Jina (Kiingereza) <span className="text-red-400">*</span>
                     </label>
                     <input
                       type="text"
                       required
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className={inputClass}
-                      placeholder="St. Peter Parish"
+                      className="input-illuminated"
+                      placeholder="Mf. St. Peter Parish"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Jina (Kiswahili)
-                    </label>
+                    <label className={labelClass}>Jina (Kiswahili)</label>
                     <input
                       type="text"
                       value={formData.nameSwahili}
                       onChange={(e) => setFormData({ ...formData, nameSwahili: e.target.value })}
-                      className={inputClass}
-                      placeholder="Parokia ya Mt. Petro"
+                      className="input-illuminated"
+                      placeholder="Mf. Parokia ya Mt. Petro"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Jimbo <span className="text-red-500">*</span>
+                    <label className={labelClass}>
+                      Jimbo <span className="text-red-400">*</span>
                     </label>
                     <input
                       type="text"
                       required
                       value={formData.diocese}
                       onChange={(e) => setFormData({ ...formData, diocese: e.target.value })}
-                      className={inputClass}
-                      placeholder="Jimbo Kuu la Dar es Salaam"
+                      className="input-illuminated"
+                      placeholder="Mf. Jimbo Kuu la Dar es Salaam"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Mkoa
-                    </label>
+                    <label className={labelClass}>Mkoa</label>
                     <input
                       type="text"
                       value={formData.region}
                       onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                      className={inputClass}
-                      placeholder="Dar es Salaam"
+                      className="input-illuminated"
+                      placeholder="Mf. Dar es Salaam"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Dekanati
-                    </label>
+                    <label className={labelClass}>Dekanati</label>
                     <input
                       type="text"
                       value={formData.deanery}
                       onChange={(e) => setFormData({ ...formData, deanery: e.target.value })}
-                      className={inputClass}
-                      placeholder="Dekanati ya Masaki"
+                      className="input-illuminated"
+                      placeholder="Mf. Dekanati ya Masaki"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Padre Paroko
-                    </label>
+                    <label className={labelClass}>Padre Paroko</label>
                     <input
                       type="text"
                       value={formData.priestName}
                       onChange={(e) => setFormData({ ...formData, priestName: e.target.value })}
-                      className={inputClass}
-                      placeholder="Padre Petro Makundi"
+                      className="input-illuminated"
+                      placeholder="Mf. Padre Petro Makundi"
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Anwani <span className="text-red-500">*</span>
+                    <label className={labelClass}>
+                      Anwani <span className="text-red-400">*</span>
                     </label>
                     <textarea
                       required
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       rows={2}
-                      className={inputClass + ' resize-none'}
-                      placeholder="Masaki, Dar es Salaam, Tanzania"
+                      className="input-illuminated resize-none"
+                      placeholder="Mf. Masaki, Dar es Salaam, Tanzania"
                     />
                   </div>
                 </div>
 
-                {/* Contact */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Namba ya Simu
-                    </label>
+                    <label className={labelClass}>Namba ya Simu</label>
                     <input
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className={inputClass}
+                      className="input-illuminated"
                       placeholder="+255 XXX XXX XXX"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Barua Pepe
-                    </label>
+                    <label className={labelClass}>Barua Pepe</label>
                     <input
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className={inputClass}
+                      className="input-illuminated"
                       placeholder="info@parokia.com"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Namba ya Till ya M-Pesa
-                    </label>
+                    <label className={labelClass}>Namba ya Till ya M-Pesa</label>
                     <input
                       type="text"
                       value={formData.mpesaTillNumber}
                       onChange={(e) => setFormData({ ...formData, mpesaTillNumber: e.target.value })}
-                      className={inputClass}
+                      className="input-illuminated"
                       placeholder="545454"
                     />
                   </div>
                 </div>
 
-                {/* Location */}
                 <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    Mahali (Latitude &amp; Longitude) <span className="text-red-500">*</span>
+                  <p className={labelClass}>
+                    Mahali (Latitude &amp; Longitude) <span className="text-red-400">*</span>
                   </p>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Latitude</label>
+                      <label className="block text-xs text-ash mb-1.5">Latitude</label>
                       <input
                         type="number"
                         step="any"
                         required
                         value={formData.latitude}
                         onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-                        className={inputClass}
+                        className="input-illuminated"
                         placeholder="-6.7617"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Longitude</label>
+                      <label className="block text-xs text-ash mb-1.5">Longitude</label>
                       <input
                         type="number"
                         step="any"
                         required
                         value={formData.longitude}
                         onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-                        className={inputClass}
+                        className="input-illuminated"
                         placeholder="39.2634"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Actions */}
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="flex-1 px-4 py-3 border border-[#e8e3d8] dark:border-[#253d2e] text-[#1a3d2e] dark:text-[#e8e3d8] font-medium rounded-xl hover:bg-parchment-deep dark:hover:bg-[#253d2e] transition-colors"
                   >
                     Ghairi
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                    className="flex-1 btn-gold justify-center disabled:opacity-50"
                   >
                     {saving ? (
                       <>
@@ -624,7 +590,7 @@ export default function SuperParishesPage() {
         {/* Location Approve / Reject Modal */}
         {locationTarget && locationAction && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <div className="card rounded-2xl shadow-2xl w-full max-w-sm p-6">
               <div className={`flex items-center justify-center w-14 h-14 rounded-full mx-auto mb-4 ${
                 locationAction === 'approve' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
               }`}>
@@ -634,23 +600,21 @@ export default function SuperParishesPage() {
                   {locationAction === 'approve' ? 'verified' : 'cancel'}
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white text-center">
+              <h3 className="text-lg font-bold text-[#1a3d2e] dark:text-[#e8e3d8] text-center">
                 {locationAction === 'approve' ? 'Idhinisha Eneo?' : 'Kataa Eneo?'}
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-1 mb-4">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">{locationTarget.name}</span>
+              <p className="text-sm text-ash text-center mt-1 mb-4">
+                <span className="font-semibold text-[#1a3d2e] dark:text-[#e8e3d8]">{locationTarget.name}</span>
               </p>
               {locationAction === 'reject' && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Sababu ya kukataa (hiari)
-                  </label>
+                  <label className={labelClass}>Sababu ya kukataa (hiari)</label>
                   <input
                     type="text"
                     value={rejectionNote}
                     onChange={(e) => setRejectionNote(e.target.value)}
                     placeholder="Mf: Eneo halikuwa sahihi, jaribu tena."
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="input-illuminated"
                   />
                 </div>
               )}
@@ -658,14 +622,14 @@ export default function SuperParishesPage() {
                 <button
                   onClick={() => { setLocationTarget(null); setLocationAction(null); setRejectionNote(''); }}
                   disabled={processingLocation}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="flex-1 px-4 py-2.5 border border-[#e8e3d8] dark:border-[#253d2e] text-[#1a3d2e] dark:text-[#e8e3d8] font-medium rounded-xl hover:bg-parchment-deep dark:hover:bg-[#253d2e] transition-colors"
                 >
                   Ghairi
                 </button>
                 <button
                   onClick={handleLocationAction}
                   disabled={processingLocation}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white font-medium rounded-lg transition-colors disabled:opacity-50 ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-white font-medium rounded-xl transition-colors disabled:opacity-50 ${
                     locationAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
                   }`}
                 >
@@ -682,50 +646,42 @@ export default function SuperParishesPage() {
         {/* Delete Confirmation Modal */}
         {deleteTarget && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <div className="card rounded-2xl shadow-2xl w-full max-w-sm p-6">
               <div className="flex items-center justify-center w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-full mx-auto mb-4">
                 <span className="material-symbols-outlined text-3xl text-red-600 dark:text-red-400">
                   delete_forever
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white text-center">
+              <h3 className="text-lg font-bold text-[#1a3d2e] dark:text-[#e8e3d8] text-center">
                 Futa Parokia?
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-2">
+              <p className="text-sm text-ash text-center mt-2">
                 Una uhakika unataka kufuta{' '}
-                <span className="font-semibold text-gray-700 dark:text-gray-300">
-                  {deleteTarget.name}
-                </span>
+                <span className="font-semibold text-[#1a3d2e] dark:text-[#e8e3d8]">{deleteTarget.name}</span>
                 ? Hatua hii haiwezi kutenduliwa.
               </p>
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setDeleteTarget(null)}
                   disabled={deleting}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="flex-1 px-4 py-2.5 border border-[#e8e3d8] dark:border-[#253d2e] text-[#1a3d2e] dark:text-[#e8e3d8] font-medium rounded-xl hover:bg-parchment-deep dark:hover:bg-[#253d2e] transition-colors"
                 >
                   Ghairi
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
                 >
                   {deleting ? (
-                    <>
-                      <span className="material-symbols-outlined animate-spin text-base">
-                        progress_activity
-                      </span>
-                      Inafuta...
-                    </>
-                  ) : (
-                    'Ndio, Futa'
-                  )}
+                    <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
+                  ) : 'Ndio, Futa'}
                 </button>
               </div>
             </div>
           </div>
         )}
+
       </DashboardLayout>
     </SuperAdminRoute>
   );

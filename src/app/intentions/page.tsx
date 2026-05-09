@@ -50,6 +50,7 @@ export default function IntentionsPage() {
   const [filter, setFilter] = useState<typeof TABS[number]['key']>('all');
   const [timePeriod, setTimePeriod] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
+  const [updating, setUpdating] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!userData) return;
@@ -82,7 +83,10 @@ export default function IntentionsPage() {
   };
 
   const handleStatusChange = async (id: string, newStatus: MassIntention['status']) => {
+    if (!userData?.parishId) return;
+    if (!intentions.find(i => i.id === id)) return;
     try {
+      setUpdating(prev => new Set(prev).add(id));
       const updateData: Record<string, unknown> = { status: newStatus, updatedAt: Timestamp.now() };
       const notes = adminNotes[id];
       if (notes?.trim()) updateData.adminNotes = notes.trim();
@@ -92,6 +96,8 @@ export default function IntentionsPage() {
     } catch (error) {
       console.error('Error updating status:', error);
       alert('Imeshindwa kubadilisha hali');
+    } finally {
+      setUpdating(prev => { const s = new Set(prev); s.delete(id); return s; });
     }
   };
 
@@ -299,13 +305,21 @@ export default function IntentionsPage() {
 
                     {/* Admin note input */}
                     {(intention.status === 'pending' || intention.status === 'flagged') && (
-                      <input
-                        type="text"
-                        placeholder="Ongeza maelezo ya msimamizi (hiari)…"
-                        value={adminNotes[intention.id] ?? ''}
-                        onChange={e => setAdminNotes(prev => ({ ...prev, [intention.id]: e.target.value }))}
-                        className="input-illuminated mb-3 text-sm"
-                      />
+                      <div className="mb-3">
+                        <input
+                          type="text"
+                          placeholder="Ongeza maelezo ya msimamizi (hiari)…"
+                          value={adminNotes[intention.id] ?? ''}
+                          onChange={e => setAdminNotes(prev => ({ ...prev, [intention.id]: e.target.value }))}
+                          className="input-illuminated text-sm"
+                          maxLength={500}
+                        />
+                        {(adminNotes[intention.id]?.length ?? 0) > 400 && (
+                          <p className="text-[10px] text-right mt-1 text-ash">
+                            {adminNotes[intention.id]?.length ?? 0}/500
+                          </p>
+                        )}
+                      </div>
                     )}
 
                     {/* Actions */}
@@ -314,14 +328,16 @@ export default function IntentionsPage() {
                         <>
                           <button
                             onClick={() => handleStatusChange(intention.id, 'approved')}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#10b981] hover:bg-[#059669] text-white text-[12px] font-semibold rounded-lg transition-colors"
+                            disabled={updating.has(intention.id)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#10b981] hover:bg-[#059669] text-white text-[12px] font-semibold rounded-lg transition-colors disabled:opacity-50"
                           >
                             <span className="material-symbols-outlined text-[14px]">check</span>
                             Idhinisha
                           </button>
                           <button
                             onClick={() => handleStatusChange(intention.id, 'rejected')}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#ef4444] hover:bg-[#dc2626] text-white text-[12px] font-semibold rounded-lg transition-colors"
+                            disabled={updating.has(intention.id)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#ef4444] hover:bg-[#dc2626] text-white text-[12px] font-semibold rounded-lg transition-colors disabled:opacity-50"
                           >
                             <span className="material-symbols-outlined text-[14px]">close</span>
                             Kataa
@@ -329,7 +345,8 @@ export default function IntentionsPage() {
                           {intention.status !== 'flagged' && (
                             <button
                               onClick={() => handleStatusChange(intention.id, 'flagged')}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f97316] hover:bg-[#ea6c0a] text-white text-[12px] font-semibold rounded-lg transition-colors"
+                              disabled={updating.has(intention.id)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f97316] hover:bg-[#ea6c0a] text-white text-[12px] font-semibold rounded-lg transition-colors disabled:opacity-50"
                             >
                               <span className="material-symbols-outlined text-[14px]">flag</span>
                               Ripoti
@@ -340,7 +357,8 @@ export default function IntentionsPage() {
                       {intention.status === 'approved' && (
                         <button
                           onClick={() => handleStatusChange(intention.id, 'completed')}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3b82f6] hover:bg-[#2563eb] text-white text-[12px] font-semibold rounded-lg transition-colors"
+                          disabled={updating.has(intention.id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3b82f6] hover:bg-[#2563eb] text-white text-[12px] font-semibold rounded-lg transition-colors disabled:opacity-50"
                         >
                           <span className="material-symbols-outlined text-[14px]">done_all</span>
                           Kamilisha
@@ -349,7 +367,8 @@ export default function IntentionsPage() {
                       {intention.status !== 'pending' && (
                         <button
                           onClick={() => handleStatusChange(intention.id, 'pending')}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-ash dark:text-[#6b9080] border border-[#e8e3d8] dark:border-[#253d2e] hover:border-[#c4933f] text-[12px] font-medium rounded-lg transition-colors"
+                          disabled={updating.has(intention.id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-ash dark:text-[#6b9080] border border-[#e8e3d8] dark:border-[#253d2e] hover:border-[#c4933f] text-[12px] font-medium rounded-lg transition-colors disabled:opacity-50"
                         >
                           <span className="material-symbols-outlined text-[14px]">undo</span>
                           Rudisha

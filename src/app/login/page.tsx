@@ -14,8 +14,8 @@ function LoginForm() {
   const searchParams = useSearchParams();
 
   const rawReturn = searchParams.get('returnTo') ?? '';
-  // Only allow internal paths to prevent open redirect
   const returnTo = rawReturn.startsWith('/') ? rawReturn : '/dashboard';
+  const errorParam = searchParams.get('error');
 
   useEffect(() => {
     if (user) router.push(returnTo);
@@ -130,6 +130,12 @@ function LoginForm() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5 anim-fade-up anim-delay-1">
+            {errorParam === 'disabled' && (
+              <div className="flex items-start gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/40">
+                <span className="material-symbols-outlined text-amber-500 text-[18px] mt-0.5 shrink-0">block</span>
+                <p className="text-sm text-amber-700 dark:text-amber-400">Akaunti yako imezuiwa. Wasiliana na msimamizi mkuu ili kupata msaada.</p>
+              </div>
+            )}
             {error && (
               <div className="flex items-start gap-3 p-4 rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-900/40">
                 <span className="material-symbols-outlined text-red-500 text-[18px] mt-0.5 shrink-0">error</span>
