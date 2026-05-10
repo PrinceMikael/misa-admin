@@ -257,7 +257,7 @@ export default function ParishPage() {
                 </div>
                 <div>
                   <Label>Mwaka wa Kuanzishwa</Label>
-                  <input type="number" value={formData.foundedYear} onChange={e => setFormData({ ...formData, foundedYear: e.target.value })} className="input-illuminated" placeholder="Mf. 1954" />
+                  <input type="text" inputMode="numeric" pattern="[0-9]*" value={formData.foundedYear} onChange={e => setFormData({ ...formData, foundedYear: e.target.value.replace(/\D/g, '') })} className="input-illuminated" placeholder="Mf. 1954" />
                 </div>
                 <div>
                   <Label>Padre Paroko</Label>
@@ -287,7 +287,7 @@ export default function ParishPage() {
                 </div>
                 <div>
                   <Label>Kiasi cha Nia (TZS)</Label>
-                  <input type="number" value={formData.mpesaAmount} onChange={e => setFormData({ ...formData, mpesaAmount: e.target.value })} className="input-illuminated" placeholder="Mf. 5000" />
+                  <input type="text" inputMode="numeric" pattern="[0-9]*" value={formData.mpesaAmount} onChange={e => setFormData({ ...formData, mpesaAmount: e.target.value.replace(/\D/g, '') })} className="input-illuminated" placeholder="Mf. 5000" />
                 </div>
                 <div className="sm:col-span-2">
                   <Label>Saa za Ofisi</Label>
@@ -340,11 +340,11 @@ export default function ParishPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Latitude</Label>
-                  <input type="number" step="any" value={formData.latitude} onChange={e => setFormData({ ...formData, latitude: e.target.value })} className="input-illuminated" placeholder="-6.7617" />
+                  <input type="text" inputMode="decimal" value={formData.latitude} onChange={e => setFormData({ ...formData, latitude: e.target.value })} className="input-illuminated" placeholder="-6.7617" />
                 </div>
                 <div>
                   <Label>Longitude</Label>
-                  <input type="number" step="any" value={formData.longitude} onChange={e => setFormData({ ...formData, longitude: e.target.value })} className="input-illuminated" placeholder="39.2634" />
+                  <input type="text" inputMode="decimal" value={formData.longitude} onChange={e => setFormData({ ...formData, longitude: e.target.value })} className="input-illuminated" placeholder="39.2634" />
                 </div>
               </div>
 

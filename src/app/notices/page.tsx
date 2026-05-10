@@ -42,7 +42,7 @@ export default function NoticesPage() {
     title: '',
     body: '',
     category: 'announcement' as Notice['category'],
-    imageUrl: '',
+    imageUrls: [] as string[],
   });
 
   useEffect(() => {
@@ -75,26 +75,35 @@ export default function NoticesPage() {
   };
 
   const resetForm = () => {
-    setFormData({ title: '', body: '', category: 'announcement', imageUrl: '' });
+    setFormData({ title: '', body: '', category: 'announcement', imageUrls: [] });
     setEditingId(null);
     setShowForm(false);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !userData?.parishId) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length || !userData?.parishId) return;
     try {
       setUploading(true);
-      const storageRef = ref(storage, `notices/${userData.parishId}/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      setFormData(prev => ({ ...prev, imageUrl: downloadURL }));
+      const uploadedUrls: string[] = [];
+      for (const file of files) {
+        const storageRef = ref(storage, `notices/${userData.parishId}/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(storageRef);
+        uploadedUrls.push(downloadURL);
+      }
+      setFormData(prev => ({ ...prev, imageUrls: [...prev.imageUrls, ...uploadedUrls] }));
     } catch (error) {
       console.error('Error uploading image:', error);
       alert('Imeshindwa kupakia picha. Tafadhali jaribu tena.');
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
+  };
+
+  const handleRemoveNoticePhoto = (index: number) => {
+    setFormData(prev => ({ ...prev, imageUrls: prev.imageUrls.filter((_, i) => i !== index) }));
   };
 
   const handleEdit = (notice: Notice) => {
@@ -102,7 +111,7 @@ export default function NoticesPage() {
       title: notice.title,
       body: notice.body,
       category: notice.category || 'announcement',
-      imageUrl: notice.imageUrl || '',
+      imageUrls: notice.imageUrls || (notice.imageUrl ? [notice.imageUrl] : []),
     });
     setEditingId(notice.id);
     setShowForm(true);
@@ -130,8 +139,9 @@ export default function NoticesPage() {
         body: formData.body,
         category: formData.category,
         postedAt: Timestamp.now(),
+        imageUrls: formData.imageUrls,
+        imageUrl: formData.imageUrls[0] || null,
       };
-      if (formData.imageUrl.trim()) data.imageUrl = formData.imageUrl.trim();
 
       if (editingId) {
         await updateDoc(doc(db, 'notices', editingId), data);
@@ -235,21 +245,31 @@ export default function NoticesPage() {
                   </select>
                 </div>
 
-                {/* Image */}
+                {/* Images */}
                 <div>
                   <label className="block text-[11px] font-semibold uppercase tracking-wider text-ash dark:text-[#5a8070] mb-1.5">
-                    Picha (hiari)
+                    Picha (hiari — unaweza kuchagua nyingi)
                   </label>
-                  {formData.imageUrl && (
-                    <div className="relative mb-2 inline-block">
-                      <img src={formData.imageUrl} alt="Hakiki" className="h-28 rounded-xl object-cover border border-[#e8e3d8] dark:border-[#253d2e]" />
-                      <button
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-[#ef4444] text-white rounded-full flex items-center justify-center hover:bg-[#dc2626]"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">close</span>
-                      </button>
+                  {formData.imageUrls.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2 mb-2">
+                      {formData.imageUrls.map((url, i) => (
+                        <div key={i} className="relative group rounded-xl overflow-hidden">
+                          <img src={url} alt={`Picha ${i + 1}`} className="w-full h-24 object-cover" />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveNoticePhoto(i)}
+                            className="absolute top-1 right-1 p-1 bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                          >
+                            <span className="material-symbols-outlined text-[12px]">close</span>
+                          </button>
+                          {i === 0 && (
+                            <span className="absolute bottom-1 left-1 text-[8px] font-bold uppercase tracking-wider bg-[#c4933f] text-white px-1.5 py-0.5 rounded">
+                              Kuu
+                            </span>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                   <label className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border border-dashed cursor-pointer transition-colors ${
@@ -257,11 +277,11 @@ export default function NoticesPage() {
                       ? 'opacity-50 cursor-not-allowed border-[#e8e3d8] dark:border-[#253d2e]'
                       : 'border-[#d4cfc4] dark:border-[#253d2e] hover:border-[#c4933f] hover:bg-[#c4933f]/5'
                   }`}>
-                    <span className="material-symbols-outlined text-[20px] text-ash">upload</span>
+                    <span className="material-symbols-outlined text-[20px] text-ash">add_photo_alternate</span>
                     <span className="text-sm text-ash dark:text-[#6b9080]">
-                      {uploading ? 'Inapakia picha…' : formData.imageUrl ? 'Badilisha picha' : 'Chagua picha'}
+                      {uploading ? 'Inapakia picha…' : 'Ongeza picha (unaweza kuchagua nyingi)'}
                     </span>
-                    <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploading} className="hidden" />
+                    <input type="file" accept="image/*" multiple onChange={handleImageUpload} disabled={uploading} className="hidden" />
                   </label>
                 </div>
 
@@ -327,8 +347,8 @@ export default function NoticesPage() {
                   </div>
 
                   {/* Notice image on mobile */}
-                  {notice.imageUrl && (
-                    <img src={notice.imageUrl} alt={notice.title} className="w-14 h-14 rounded-xl object-cover shrink-0 sm:hidden" />
+                  {(notice.imageUrls?.[0] || notice.imageUrl) && (
+                    <img src={notice.imageUrls?.[0] || notice.imageUrl} alt={notice.title} className="w-14 h-14 rounded-xl object-cover shrink-0 sm:hidden" />
                   )}
 
                   <div className="flex-1 min-w-0">
@@ -366,8 +386,12 @@ export default function NoticesPage() {
                       <p className="text-sm text-ash dark:text-[#6b9080] leading-relaxed line-clamp-3 flex-1">
                         {notice.body}
                       </p>
-                      {notice.imageUrl && (
-                        <img src={notice.imageUrl} alt={notice.title} className="w-16 h-16 rounded-xl object-cover shrink-0 hidden sm:block" />
+                      {(notice.imageUrls?.[0] || notice.imageUrl) && (
+                        <div className="hidden sm:flex gap-1 shrink-0">
+                          {(notice.imageUrls && notice.imageUrls.length > 0 ? notice.imageUrls.slice(0, 3) : [notice.imageUrl!]).map((url, i) => (
+                            <img key={i} src={url} alt={notice.title} className="w-14 h-14 rounded-xl object-cover" />
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>

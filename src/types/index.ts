@@ -90,6 +90,7 @@ export interface Notice {
   title: string;
   body: string;
   imageUrl?: string;
+  imageUrls?: string[];
   category?: 'event' | 'announcement' | 'message' | 'schedule_change';
   postedAt: Date;
   createdAt: Date;
