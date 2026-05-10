@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(firebaseUser);
 
       if (firebaseUser) {
-        // Fetch user data from Firestore
+        document.cookie = '__firebase_auth=1; path=/; SameSite=Lax; max-age=86400';
         try {
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
@@ -53,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error('Error fetching user data:', error);
         }
       } else {
+        document.cookie = '__firebase_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
         setUserData(null);
       }
 
@@ -67,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    document.cookie = '__firebase_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
     await firebaseSignOut(auth);
   };
 

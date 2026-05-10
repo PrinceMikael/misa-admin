@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, updateDoc, doc, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, updateDoc, doc, orderBy, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -53,21 +53,15 @@ export default function IntentionsPage() {
   const [updating, setUpdating] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!userData) return;
-    if (userData.parishId) loadIntentions();
-    else setLoading(false);
-  }, [userData]);
+    if (!userData?.parishId) { setLoading(false); return; }
 
-  const loadIntentions = async () => {
-    if (!userData?.parishId) return;
-    try {
-      setLoading(true);
-      const q = query(
-        collection(db, 'mass_intentions'),
-        where('parishId', '==', userData.parishId),
-        orderBy('createdAt', 'desc')
-      );
-      const snapshot = await getDocs(q);
+    const q = query(
+      collection(db, 'mass_intentions'),
+      where('parishId', '==', userData.parishId),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       setIntentions(snapshot.docs.map(d => ({
         id: d.id,
         ...d.data(),
@@ -75,12 +69,14 @@ export default function IntentionsPage() {
         updatedAt: d.data().updatedAt?.toDate() || new Date(),
         preferredDate: d.data().preferredDate?.toDate(),
       })) as MassIntention[]);
-    } catch (error) {
-      console.error('Error loading intentions:', error);
-    } finally {
       setLoading(false);
-    }
-  };
+    }, (error) => {
+      console.error('Error loading intentions:', error);
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, [userData?.parishId]);
 
   const handleStatusChange = async (id: string, newStatus: MassIntention['status']) => {
     if (!userData?.parishId) return;
@@ -92,7 +88,6 @@ export default function IntentionsPage() {
       if (notes?.trim()) updateData.adminNotes = notes.trim();
       await updateDoc(doc(db, 'mass_intentions', id), updateData);
       setAdminNotes(prev => { const n = { ...prev }; delete n[id]; return n; });
-      loadIntentions();
     } catch (error) {
       console.error('Error updating status:', error);
       alert('Imeshindwa kubadilisha hali');

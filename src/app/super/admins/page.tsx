@@ -262,7 +262,15 @@ Karibu sana kwenye familia ya Misa! 🙏`;
     try {
       setActioning(true);
       if (actionType === 'delete') {
-        await deleteDoc(doc(db, 'users', actionTarget.id));
+        // Cascade: also delete any pending invite tokens for this user
+        const tokenSnap = await getDocs(query(
+          collection(db, 'invite_tokens'),
+          where('uid', '==', actionTarget.id)
+        ));
+        await Promise.all([
+          deleteDoc(doc(db, 'users', actionTarget.id)),
+          ...tokenSnap.docs.map(d => deleteDoc(doc(db, 'invite_tokens', d.id))),
+        ]);
       } else {
         await updateDoc(doc(db, 'users', actionTarget.id), {
           status: actionType === 'disable' ? 'disabled' : 'active',
