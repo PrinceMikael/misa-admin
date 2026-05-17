@@ -24,7 +24,9 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
 } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 import { db, auth, firebaseConfig } from '@/lib/firebase';
+import { useTranslation } from '@/contexts/LanguageContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import SuperAdminRoute from '@/components/SuperAdminRoute';
 import { User } from '@/types';
@@ -52,6 +54,8 @@ const STATUS_STYLES: Record<string, string> = {
 const labelClass = 'block text-[11px] uppercase tracking-wider font-semibold text-[#1a3d2e]/60 dark:text-[#e8e3d8]/60 mb-1.5';
 
 export default function SuperAdminsPage() {
+  const t = useTranslation();
+  const router = useRouter();
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -299,24 +303,34 @@ Karibu sana kwenye familia ya Misa! 🙏`;
         <div className="p-4 sm:p-6 lg:p-8">
 
           {/* Header */}
-          <div className="flex items-start justify-between gap-4 mb-6 anim-fade-up">
-            <div>
-              <h1
-                className="text-4xl sm:text-5xl font-semibold leading-none text-[#1a3d2e] dark:text-[#e8e3d8]"
-                style={{ fontFamily: 'var(--font-cormorant)' }}
-              >
-                Wasimamizi wa Parokia
-              </h1>
-              <p className="text-sm text-ash dark:text-[#6b9080] mt-2">
-                {loading ? '...' : `Wasimamizi ${admins.length} wameandikishwa`}
-              </p>
-              <hr className="gold-rule mt-4 max-w-20" />
-            </div>
-            <button onClick={openInvite} className="btn-gold shrink-0 mt-1">
-              <span className="material-symbols-outlined text-[18px]">person_add</span>
-              <span className="hidden sm:inline">Alika Msimamizi</span>
-              <span className="sm:hidden">Alika</span>
+          <div className="mb-6 anim-fade-up">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="inline-flex items-center gap-1.5 text-sm text-ash dark:text-[#6b9080] hover:text-[#1a3d2e] dark:hover:text-[#e8e3d8] mb-4 transition-colors group"
+            >
+              <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+              {t('Rudi', 'Back')}
             </button>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1
+                  className="text-4xl sm:text-5xl font-semibold leading-none text-[#1a3d2e] dark:text-[#e8e3d8]"
+                  style={{ fontFamily: 'var(--font-cormorant)' }}
+                >
+                  {t('Wasimamizi wa Parokia', 'Parish Admins')}
+                </h1>
+                <p className="text-sm text-ash dark:text-[#6b9080] mt-2">
+                  {loading ? '...' : t(`Wasimamizi ${admins.length} wameandikishwa`, `${admins.length} admins registered`)}
+                </p>
+                <hr className="gold-rule mt-4 max-w-20" />
+              </div>
+              <button onClick={openInvite} className="btn-gold shrink-0 mt-1">
+                <span className="material-symbols-outlined text-[18px]">person_add</span>
+                <span className="hidden sm:inline">{t('Alika Msimamizi', 'Invite Admin')}</span>
+                <span className="sm:hidden">{t('Alika', 'Invite')}</span>
+              </button>
+            </div>
           </div>
 
           {/* Search */}
@@ -326,7 +340,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
             </span>
             <input
               type="text"
-              placeholder="Tafuta msimamizi..."
+              placeholder={t('Tafuta msimamizi...', 'Search admins...')}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="input-illuminated pl-10"
@@ -345,12 +359,12 @@ Karibu sana kwenye familia ya Misa! 🙏`;
             <div className="card rounded-2xl flex flex-col items-center justify-center py-16 text-center">
               <span className="material-symbols-outlined text-5xl text-ash-light dark:text-[#2e4a38] mb-3">manage_accounts</span>
               <p className="text-ash italic mb-4" style={{ fontFamily: 'var(--font-cormorant)' }}>
-                {search ? 'Hakuna msimamizi anayelingana na utafutaji.' : 'Bado hakuna msimamizi aliyealikwa.'}
+                {search ? t('Hakuna msimamizi anayelingana na utafutaji.', 'No admins match your search.') : t('Bado hakuna msimamizi aliyealikwa.', 'No admins have been invited yet.')}
               </p>
               {!search && (
                 <button onClick={openInvite} className="btn-gold">
                   <span className="material-symbols-outlined text-[18px]">person_add</span>
-                  Alika wa Kwanza
+                  {t('Alika wa Kwanza', 'Invite First Admin')}
                 </button>
               )}
             </div>
@@ -362,7 +376,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-[#e8e3d8] dark:border-[#253d2e]">
-                      {['Msimamizi', 'Parokia', 'Hali', 'Tarehe ya Kujiandikisha', ''].map(h => (
+                      {[t('Msimamizi', 'Admin'), t('Parokia', 'Parish'), t('Hali', 'Status'), t('Tarehe ya Kujiandikisha', 'Registered'), ''].map(h => (
                         <th key={h} className="text-left px-6 py-4 text-[11px] font-semibold uppercase tracking-wider text-ash">
                           {h}
                         </th>
@@ -389,7 +403,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                           </td>
                           <td className="px-6 py-4 text-sm text-[#1a3d2e]/80 dark:text-[#e8e3d8]/70">
                             {admin.parishName ?? (
-                              <span className="italic text-ash">Haijaunganishwa</span>
+                              <span className="italic text-ash">{t('Haijaunganishwa', 'Unassigned')}</span>
                             )}
                           </td>
                           <td className="px-6 py-4">
@@ -463,7 +477,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                               <p className="text-xs text-ash truncate">{admin.email}</p>
                             )}
                             <p className="text-xs text-ash mt-0.5">
-                              {admin.parishName ?? <span className="italic">Haijaunganishwa</span>}
+                              {admin.parishName ?? <span className="italic">{t('Haijaunganishwa', 'Unassigned')}</span>}
                             </p>
                           </div>
                         </div>
@@ -479,7 +493,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-900 disabled:opacity-50"
                           >
                             <span className="material-symbols-outlined text-base">forward_to_inbox</span>
-                            Tuma Upya
+                            {t('Tuma Upya', 'Resend')}
                           </button>
                         )}
                         {status === 'disabled' ? (
@@ -488,7 +502,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-900"
                           >
                             <span className="material-symbols-outlined text-base">check_circle</span>
-                            Wezesha
+                            {t('Wezesha', 'Enable')}
                           </button>
                         ) : (
                           <button
@@ -496,7 +510,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-900"
                           >
                             <span className="material-symbols-outlined text-base">block</span>
-                            Zuia
+                            {t('Zuia', 'Disable')}
                           </button>
                         )}
                         <button
@@ -504,7 +518,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                           className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-900"
                         >
                           <span className="material-symbols-outlined text-base">delete</span>
-                          Futa
+                          {t('Futa', 'Delete')}
                         </button>
                       </div>
                     </div>
@@ -524,7 +538,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                   className="text-2xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8]"
                   style={{ fontFamily: 'var(--font-cormorant)' }}
                 >
-                  Alika Msimamizi Mpya
+                  {t('Alika Msimamizi Mpya', 'Invite New Admin')}
                 </h2>
                 <button
                   onClick={closeInviteModal}
@@ -539,7 +553,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                   <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
                     <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-2xl">mark_email_read</span>
                     <div>
-                      <p className="text-sm font-semibold text-green-700 dark:text-green-400">Mwaliko Umetumwa!</p>
+                      <p className="text-sm font-semibold text-green-700 dark:text-green-400">{t('Mwaliko Umetumwa!', 'Invite Sent!')}</p>
                       <p className="text-xs text-green-600 dark:text-green-500 mt-0.5">
                         Barua pepe imetumwa kwa <span className="font-medium">{inviteEmail}</span>
                       </p>
@@ -550,7 +564,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                     <div className="flex items-center gap-2 mb-2">
                       <span className="material-symbols-outlined text-amber-600 text-[18px]">timer</span>
                       <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
-                        Kiungo halali kwa saa 1 tu — matumizi moja
+                        {t('Kiungo halali kwa saa 1 tu — matumizi moja', 'Link valid for 1 hour — single use')}
                       </p>
                     </div>
                     <p className="text-xs text-amber-700 dark:text-amber-400 font-mono break-all bg-amber-100 dark:bg-amber-900/40 px-3 py-2 rounded-lg">
@@ -560,7 +574,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
 
                   <div className="p-4 bg-parchment dark:bg-[#1a2e23] rounded-xl border border-[#e8e3d8] dark:border-[#253d2e]">
                     <p className={`${labelClass} mb-3`}>
-                      Ujumbe wa WhatsApp / SMS
+                      {t('Ujumbe wa WhatsApp / SMS', 'WhatsApp / SMS Message')}
                     </p>
                     <pre className="text-xs text-[#1a3d2e] dark:text-[#e8e3d8] whitespace-pre-wrap leading-relaxed font-sans">
                       {buildWhatsappMessage(inviteEmail, inviteDisplayName, inviteToken)}
@@ -571,7 +585,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                       className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-forest text-white text-xs font-semibold rounded-lg hover:bg-forest-mid transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">{copied ? 'check' : 'content_copy'}</span>
-                      {copied ? 'Imenakiliwa!' : 'Nakili Ujumbe'}
+                      {copied ? t('Imenakiliwa!', 'Copied!') : t('Nakili Ujumbe', 'Copy Message')}
                     </button>
                   </div>
 
@@ -580,13 +594,13 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                     onClick={closeInviteModal}
                     className="w-full px-4 py-2.5 border border-[#e8e3d8] dark:border-[#253d2e] text-ash font-medium rounded-xl hover:bg-parchment dark:hover:bg-[#253d2e]/50 transition-colors"
                   >
-                    Funga
+                    {t('Funga', 'Close')}
                   </button>
                 </div>
               ) : (
                 <form onSubmit={handleInvite} className="p-6 space-y-4">
                   <p className="text-sm text-ash">
-                    Msimamizi atapata barua pepe ya kuweka nenosiri na kiungo cha mwaliko cha matumizi moja.
+                    {t('Msimamizi atapata barua pepe ya kuweka nenosiri na kiungo cha mwaliko cha matumizi moja.', 'The admin will receive an email to set their password with a single-use invite link.')}
                   </p>
 
                   {inviteError && (
@@ -597,7 +611,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
 
                   <div>
                     <label className={labelClass}>
-                      Barua Pepe <span className="text-[#c4933f]">*</span>
+                      {t('Barua Pepe', 'Email')} <span className="text-[#c4933f]">*</span>
                     </label>
                     <input
                       type="email"
@@ -610,7 +624,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                   </div>
 
                   <div>
-                    <label className={labelClass}>Jina Kamili</label>
+                    <label className={labelClass}>{t('Jina Kamili', 'Full Name')}</label>
                     <input
                       type="text"
                       value={inviteDisplayName}
@@ -626,7 +640,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                       onClick={closeInviteModal}
                       className="flex-1 px-4 py-2.5 border border-[#e8e3d8] dark:border-[#253d2e] text-ash font-medium rounded-xl hover:bg-parchment dark:hover:bg-[#253d2e]/50 transition-colors"
                     >
-                      Ghairi
+                      {t('Ghairi', 'Cancel')}
                     </button>
                     <button
                       type="submit"
@@ -634,8 +648,8 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                       className="flex-1 btn-gold justify-center disabled:opacity-50"
                     >
                       {inviting
-                        ? <><span className="material-symbols-outlined animate-spin text-base">progress_activity</span>Inatuma…</>
-                        : <><span className="material-symbols-outlined text-base">send</span>Tuma Mwaliko</>}
+                        ? <><span className="material-symbols-outlined animate-spin text-base">progress_activity</span>{t('Inatuma…', 'Sending…')}</>
+                        : <><span className="material-symbols-outlined text-base">send</span>{t('Tuma Mwaliko', 'Send Invite')}</>}
                     </button>
                   </div>
                 </form>
@@ -653,7 +667,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                   className="text-2xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8]"
                   style={{ fontFamily: 'var(--font-cormorant)' }}
                 >
-                  Tuma Mwaliko Upya
+                  {t('Tuma Mwaliko Upya', 'Resend Invite')}
                 </h2>
                 <button
                   onClick={closeResendModal}
@@ -671,14 +685,14 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                       <div className="absolute inset-0 rounded-full border-2 border-[#e8e3d8] dark:border-[#253d2e]" />
                       <div className="absolute inset-0 rounded-full border-2 border-gold border-t-transparent animate-spin" />
                     </div>
-                    <p className="text-sm text-ash italic" style={{ fontFamily: 'var(--font-cormorant)' }}>Inatuma mwaliko mpya…</p>
+                    <p className="text-sm text-ash italic" style={{ fontFamily: 'var(--font-cormorant)' }}>{t('Inatuma mwaliko mpya…', 'Sending new invite…')}</p>
                   </div>
                 ) : resendToken ? (
                   <div className="space-y-4">
                     <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                       <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-2xl">forward_to_inbox</span>
                       <div>
-                        <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">Mwaliko Mpya Umetumwa!</p>
+                        <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">{t('Mwaliko Mpya Umetumwa!', 'New Invite Sent!')}</p>
                         <p className="text-xs text-blue-600 dark:text-blue-500 mt-0.5">
                           Kwa <span className="font-medium">{resendTarget.email}</span> — mwaliko wa zamani umebatilishwa
                         </p>
@@ -689,7 +703,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                       <div className="flex items-center gap-2 mb-2">
                         <span className="material-symbols-outlined text-amber-600 text-[18px]">timer</span>
                         <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
-                          Kiungo kipya halali kwa saa 1 tu
+                          {t('Kiungo kipya halali kwa saa 1 tu', 'New link valid for 1 hour')}
                         </p>
                       </div>
                       <p className="text-xs text-amber-700 dark:text-amber-400 font-mono break-all bg-amber-100 dark:bg-amber-900/40 px-3 py-2 rounded-lg">
@@ -699,7 +713,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
 
                     <div className="p-4 bg-parchment dark:bg-[#1a2e23] rounded-xl border border-[#e8e3d8] dark:border-[#253d2e]">
                       <p className={`${labelClass} mb-3`}>
-                        Ujumbe wa WhatsApp / SMS
+                        {t('Ujumbe wa WhatsApp / SMS', 'WhatsApp / SMS Message')}
                       </p>
                       <pre className="text-xs text-[#1a3d2e] dark:text-[#e8e3d8] whitespace-pre-wrap leading-relaxed font-sans">
                         {buildWhatsappMessage(resendTarget.email, resendTarget.displayName, resendToken)}
@@ -710,7 +724,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                         className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-forest text-white text-xs font-semibold rounded-lg hover:bg-forest-mid transition-colors"
                       >
                         <span className="material-symbols-outlined text-[14px]">{resendCopied ? 'check' : 'content_copy'}</span>
-                        {resendCopied ? 'Imenakiliwa!' : 'Nakili Ujumbe'}
+                        {resendCopied ? t('Imenakiliwa!', 'Copied!') : t('Nakili Ujumbe', 'Copy Message')}
                       </button>
                     </div>
 
@@ -719,7 +733,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                       onClick={closeResendModal}
                       className="w-full px-4 py-2.5 border border-[#e8e3d8] dark:border-[#253d2e] text-ash font-medium rounded-xl hover:bg-parchment dark:hover:bg-[#253d2e]/50 transition-colors"
                     >
-                      Funga
+                      {t('Funga', 'Close')}
                     </button>
                   </div>
                 ) : null}
@@ -750,21 +764,24 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                 className="text-2xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] text-center"
                 style={{ fontFamily: 'var(--font-cormorant)' }}
               >
-                {actionType === 'delete' ? 'Futa Msimamizi?' : actionType === 'disable' ? 'Zuia Msimamizi?' : 'Wezesha Msimamizi?'}
+                {actionType === 'delete' ? t('Futa Msimamizi?', 'Delete Admin?') : actionType === 'disable' ? t('Zuia Msimamizi?', 'Disable Admin?') : t('Wezesha Msimamizi?', 'Enable Admin?')}
               </h3>
 
               <p className="text-sm text-ash text-center mt-2">
-                {actionType === 'delete' ? 'Una uhakika unataka kufuta akaunti ya' :
-                 actionType === 'disable' ? 'Una uhakika unataka kumzuia' : 'Una uhakika unataka kumwezesha'}{' '}
+                {actionType === 'delete'
+                  ? t('Una uhakika unataka kufuta akaunti ya', 'Are you sure you want to delete the account of')
+                  : actionType === 'disable'
+                  ? t('Una uhakika unataka kumzuia', 'Are you sure you want to disable')
+                  : t('Una uhakika unataka kumwezesha', 'Are you sure you want to enable')}{' '}
                 <span className="font-semibold text-[#1a3d2e] dark:text-[#e8e3d8]">
                   {actionTarget.displayName || actionTarget.email}
                 </span>
-                {actionType === 'delete' ? '? Hatua hii haiwezi kutenduliwa.' : '?'}
+                {actionType === 'delete' ? t('? Hatua hii haiwezi kutenduliwa.', '? This action cannot be undone.') : '?'}
               </p>
 
               {actionType === 'delete' && (
                 <p className="mt-3 text-xs text-center text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2">
-                  Kumbuka: akaunti ya barua pepe itabaki. Kutuma mwaliko kwa barua pepe hii tena haitafanikiwa — tumia &quot;Tuma Upya&quot; badala yake.
+                  {t('Kumbuka: akaunti ya barua pepe itabaki. Kutuma mwaliko kwa barua pepe hii tena haitafanikiwa — tumia "Tuma Upya" badala yake.', 'Note: the email account will remain. Sending a new invite to this email will fail — use "Resend" instead.')}
                 </p>
               )}
 
@@ -774,7 +791,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                   disabled={actioning}
                   className="flex-1 px-4 py-2.5 border border-[#e8e3d8] dark:border-[#253d2e] text-ash font-medium rounded-xl hover:bg-parchment dark:hover:bg-[#253d2e]/50 transition-colors disabled:opacity-50"
                 >
-                  Ghairi
+                  {t('Ghairi', 'Cancel')}
                 </button>
                 <button
                   onClick={handleAction}
@@ -787,7 +804,7 @@ Karibu sana kwenye familia ya Misa! 🙏`;
                 >
                   {actioning
                     ? <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
-                    : 'Ndio, Endelea'}
+                    : t('Ndio, Endelea', 'Yes, Proceed')}
                 </button>
               </div>
             </div>

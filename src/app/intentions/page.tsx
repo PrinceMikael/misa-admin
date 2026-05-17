@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { collection, query, where, onSnapshot, updateDoc, doc, orderBy, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/contexts/LanguageContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import { MassIntention } from '@/types';
 import { format } from 'date-fns';
@@ -34,17 +36,19 @@ const STATUS_DOT: Record<string, string> = {
   rejected:  'bg-ash-light',
 };
 
-const TABS = [
-  { key: 'all'       as const, label: 'Zote',          shortLabel: 'Zote',   icon: 'list' },
-  { key: 'pending'   as const, label: 'Zinasubiri',     shortLabel: 'Subiri', icon: 'pending' },
-  { key: 'approved'  as const, label: 'Zimeidhinishwa', shortLabel: 'Idhin.', icon: 'check_circle' },
-  { key: 'completed' as const, label: 'Zimekamilika',   shortLabel: 'Kamili', icon: 'done_all' },
-  { key: 'rejected'  as const, label: 'Zimekataliwa',   shortLabel: 'Kataa',  icon: 'cancel' },
-  { key: 'flagged'   as const, label: 'Zimeripotiwa',   shortLabel: 'Ripoti', icon: 'flag' },
-];
-
 export default function IntentionsPage() {
   const { userData } = useAuth();
+  const t = useTranslation();
+  const router = useRouter();
+
+  const TABS = [
+    { key: 'all'       as const, label: t('Zote', 'All'),             shortLabel: t('Zote', 'All'),    icon: 'list' },
+    { key: 'pending'   as const, label: t('Zinasubiri', 'Pending'),   shortLabel: t('Subiri', 'Pend'), icon: 'pending' },
+    { key: 'approved'  as const, label: t('Zimeidhinishwa', 'Approved'), shortLabel: t('Idhin.', 'Appr'), icon: 'check_circle' },
+    { key: 'completed' as const, label: t('Zimekamilika', 'Completed'), shortLabel: t('Kamili', 'Done'), icon: 'done_all' },
+    { key: 'rejected'  as const, label: t('Zimekataliwa', 'Rejected'), shortLabel: t('Kataa', 'Rej.'),  icon: 'cancel' },
+    { key: 'flagged'   as const, label: t('Zimeripotiwa', 'Flagged'),  shortLabel: t('Ripoti', 'Flag'), icon: 'flag' },
+  ];
   const [intentions, setIntentions] = useState<MassIntention[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<typeof TABS[number]['key']>('all');
@@ -134,14 +138,22 @@ export default function IntentionsPage() {
 
         {/* Header */}
         <div className="mb-6 anim-fade-up">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-1.5 text-sm text-ash dark:text-[#6b9080] hover:text-[#1a3d2e] dark:hover:text-[#e8e3d8] mb-4 transition-colors group"
+          >
+            <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+            {t('Rudi', 'Back')}
+          </button>
           <h1
             className="text-4xl sm:text-5xl font-semibold leading-none text-[#1a3d2e] dark:text-[#e8e3d8]"
             style={{ fontFamily: 'var(--font-cormorant)' }}
           >
-            Nia za Misa
+            {t('Nia za Misa', 'Mass Intentions')}
           </h1>
           <p className="text-sm text-ash dark:text-[#6b9080] mt-2">
-            Tazama na simamia nia za Misa zilizotumwa na waumini
+            {t('Tazama na simamia nia za Misa zilizotumwa na waumini', 'View and manage Mass intentions submitted by parishioners')}
           </p>
           <hr className="gold-rule mt-4 max-w-20" />
         </div>
@@ -149,10 +161,10 @@ export default function IntentionsPage() {
         {/* Time period filter */}
         <div className="flex gap-1.5 mb-3 anim-fade-up">
           {([
-            { key: 'all',   label: 'Kipindi Chote' },
-            { key: 'today', label: 'Leo' },
-            { key: 'week',  label: 'Wiki Hii' },
-            { key: 'month', label: 'Mwezi Huu' },
+            { key: 'all',   label: t('Kipindi Chote', 'All Time') },
+            { key: 'today', label: t('Leo', 'Today') },
+            { key: 'week',  label: t('Wiki Hii', 'This Week') },
+            { key: 'month', label: t('Mwezi Huu', 'This Month') },
           ] as const).map(p => (
             <button
               key={p.key}
@@ -206,13 +218,13 @@ export default function IntentionsPage() {
               <div className="absolute inset-0 rounded-full border-2 border-[#c4933f]/20" />
               <div className="absolute inset-0 rounded-full border-2 border-[#c4933f] border-t-transparent animate-spin" />
             </div>
-            <p className="text-sm text-ash italic" style={{ fontFamily: 'var(--font-cormorant)' }}>Inapakia…</p>
+            <p className="text-sm text-ash italic" style={{ fontFamily: 'var(--font-cormorant)' }}>{t('Inapakia…', 'Loading…')}</p>
           </div>
         ) : filteredIntentions.length === 0 ? (
           <div className="card flex flex-col items-center justify-center py-16 text-center">
             <span className="material-symbols-outlined text-4xl text-ash-light dark:text-[#2e4a38] mb-3">assignment</span>
             <p className="text-ash italic" style={{ fontFamily: 'var(--font-cormorant)' }}>
-              {filter === 'all' ? 'Hakuna nia za Misa bado' : `Hakuna nia ${STATUS_LABELS[filter]?.toLowerCase() ?? filter}`}
+              {filter === 'all' ? t('Hakuna nia za Misa bado', 'No Mass intentions yet') : t(`Hakuna nia ${STATUS_LABELS[filter]?.toLowerCase() ?? filter}`, `No ${filter} intentions`)}
             </p>
           </div>
         ) : (
@@ -264,7 +276,7 @@ export default function IntentionsPage() {
                       )}
                       {intention.beneficiaryName && (
                         <span className="text-[10px] bg-parchment-deep dark:bg-[#1a2e23] text-ash px-2 py-0.5 rounded">
-                          Mnufaika: {intention.beneficiaryName}
+                          {t('Mnufaika', 'Beneficiary')}: {intention.beneficiaryName}
                         </span>
                       )}
                       {intention.mpesaConfirmationCode && (
@@ -279,7 +291,7 @@ export default function IntentionsPage() {
                       )}
                       {intention.preferredDate && (
                         <span className="text-[10px] bg-parchment-deep dark:bg-[#1a2e23] text-ash px-2 py-0.5 rounded">
-                          Tarehe: {format(intention.preferredDate, 'dd/MM/yyyy')}
+                          {t('Tarehe', 'Date')}: {format(intention.preferredDate, 'dd/MM/yyyy')}
                         </span>
                       )}
                     </div>
@@ -287,13 +299,13 @@ export default function IntentionsPage() {
                     {/* Notes */}
                     {intention.note && (
                       <div className="bg-parchment dark:bg-[#1a2e23] border border-[#e8e3d8] dark:border-[#253d2e] rounded-lg px-3 py-2 mb-2">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-ash mb-1">Maelezo ya mtumaji</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-ash mb-1">{t('Maelezo ya mtumaji', 'Submitter note')}</p>
                         <p className="text-sm text-ink-soft dark:text-[#c0bdb6]">{intention.note}</p>
                       </div>
                     )}
                     {intention.adminNotes && (
                       <div className="bg-parchment-deep dark:bg-[#1a2e23] border border-[#c4933f]/30 rounded-lg px-3 py-2 mb-2">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-[#c4933f] mb-1">Maelezo ya msimamizi</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-[#c4933f] mb-1">{t('Maelezo ya msimamizi', 'Admin notes')}</p>
                         <p className="text-sm text-ink-soft dark:text-[#c0bdb6]">{intention.adminNotes}</p>
                       </div>
                     )}
@@ -303,7 +315,7 @@ export default function IntentionsPage() {
                       <div className="mb-3">
                         <input
                           type="text"
-                          placeholder="Ongeza maelezo ya msimamizi (hiari)…"
+                          placeholder={t('Ongeza maelezo ya msimamizi (hiari)…', 'Add admin notes (optional)…')}
                           value={adminNotes[intention.id] ?? ''}
                           onChange={e => setAdminNotes(prev => ({ ...prev, [intention.id]: e.target.value }))}
                           className="input-illuminated text-sm"
@@ -327,7 +339,7 @@ export default function IntentionsPage() {
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#10b981] hover:bg-[#059669] text-white text-[12px] font-semibold rounded-lg transition-colors disabled:opacity-50"
                           >
                             <span className="material-symbols-outlined text-[14px]">check</span>
-                            Idhinisha
+                            {t('Idhinisha', 'Approve')}
                           </button>
                           <button
                             onClick={() => handleStatusChange(intention.id, 'rejected')}
@@ -335,7 +347,7 @@ export default function IntentionsPage() {
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#ef4444] hover:bg-[#dc2626] text-white text-[12px] font-semibold rounded-lg transition-colors disabled:opacity-50"
                           >
                             <span className="material-symbols-outlined text-[14px]">close</span>
-                            Kataa
+                            {t('Kataa', 'Reject')}
                           </button>
                           {intention.status !== 'flagged' && (
                             <button
@@ -344,7 +356,7 @@ export default function IntentionsPage() {
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#f97316] hover:bg-[#ea6c0a] text-white text-[12px] font-semibold rounded-lg transition-colors disabled:opacity-50"
                             >
                               <span className="material-symbols-outlined text-[14px]">flag</span>
-                              Ripoti
+                              {t('Ripoti', 'Flag')}
                             </button>
                           )}
                         </>
@@ -356,7 +368,7 @@ export default function IntentionsPage() {
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#3b82f6] hover:bg-[#2563eb] text-white text-[12px] font-semibold rounded-lg transition-colors disabled:opacity-50"
                         >
                           <span className="material-symbols-outlined text-[14px]">done_all</span>
-                          Kamilisha
+                          {t('Kamilisha', 'Mark Complete')}
                         </button>
                       )}
                       {intention.status !== 'pending' && (
@@ -366,7 +378,7 @@ export default function IntentionsPage() {
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-ash dark:text-[#6b9080] border border-[#e8e3d8] dark:border-[#253d2e] hover:border-[#c4933f] text-[12px] font-medium rounded-lg transition-colors disabled:opacity-50"
                         >
                           <span className="material-symbols-outlined text-[14px]">undo</span>
-                          Rudisha
+                          {t('Rudisha', 'Reset to Pending')}
                         </button>
                       )}
                     </div>

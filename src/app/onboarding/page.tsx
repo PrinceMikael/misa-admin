@@ -5,12 +5,19 @@ import { useRouter } from 'next/navigation';
 import { collection, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-
-const STEPS = ['Karibu', 'Parokia', 'Mahali', 'Mawasiliano'];
+import { useTranslation } from '@/contexts/LanguageContext';
 
 export default function OnboardingPage() {
   const { userData, user } = useAuth();
+  const t = useTranslation();
   const router = useRouter();
+
+  const STEPS = [
+    t('Karibu', 'Welcome'),
+    t('Parokia', 'Parish'),
+    t('Mahali', 'Location'),
+    t('Mawasiliano', 'Contact'),
+  ];
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -39,7 +46,7 @@ export default function OnboardingPage() {
   const update = (k: keyof typeof form, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
   const handleGetLocation = () => {
-    if (!navigator.geolocation) { alert('GPS haisaidiwi na kivinjari hiki.'); return; }
+    if (!navigator.geolocation) { alert(t('GPS haisaidiwi na kivinjari hiki.', 'GPS is not supported by this browser.')); return; }
     setGettingLocation(true);
     navigator.geolocation.getCurrentPosition(
       pos => {
@@ -47,7 +54,7 @@ export default function OnboardingPage() {
         update('longitude', pos.coords.longitude.toFixed(7));
         setGettingLocation(false);
       },
-      () => { alert('Imeshindwa kupata eneo. Jaza mikono.'); setGettingLocation(false); },
+      () => { alert(t('Imeshindwa kupata eneo. Jaza mikono.', 'Could not get location. Please enter manually.')); setGettingLocation(false); },
       { enableHighAccuracy: true, timeout: 10000 }
     );
   };
@@ -81,7 +88,7 @@ export default function OnboardingPage() {
       router.replace('/dashboard');
     } catch (err) {
       console.error(err);
-      alert('Imeshindwa kuhifadhi. Tafadhali jaribu tena.');
+      alert(t('Imeshindwa kuhifadhi. Tafadhali jaribu tena.', 'Failed to save. Please try again.'));
     } finally {
       setSaving(false);
     }
@@ -149,7 +156,7 @@ export default function OnboardingPage() {
 
         <div className="relative z-10">
           <div className="h-px mb-4" style={{ background: 'linear-gradient(90deg, #c4933f, transparent)', opacity: 0.4 }} />
-          <p className="text-[#4d7a63] text-xs">Hatua {step + 1} kati ya {STEPS.length}</p>
+          <p className="text-[#4d7a63] text-xs">{t(`Hatua ${step + 1} kati ya ${STEPS.length}`, `Step ${step + 1} of ${STEPS.length}`)}</p>
         </div>
       </div>
 
@@ -164,7 +171,7 @@ export default function OnboardingPage() {
           <span className="text-[#1a3d2e] font-semibold" style={{ fontFamily: 'var(--font-cormorant)', fontSize: '1.1rem' }}>
             Misa Admin
           </span>
-          <span className="ml-auto text-xs text-ash">Hatua {step + 1}/{STEPS.length}</span>
+          <span className="ml-auto text-xs text-ash">{t(`Hatua ${step + 1}/${STEPS.length}`, `Step ${step + 1}/${STEPS.length}`)}</span>
         </div>
 
         <div className="flex-1 flex items-start justify-center p-6 sm:p-10 lg:p-14">
@@ -173,28 +180,29 @@ export default function OnboardingPage() {
             {/* ── Step 0: Welcome ── */}
             {step === 0 && (
               <div className="anim-fade-up">
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#c4933f] mb-3">Hatua ya 1</p>
+                <p className="text-xs font-semibold uppercase tracking-widest text-[#c4933f] mb-3">{t('Hatua ya 1', 'Step 1')}</p>
                 <h1 className="text-4xl font-semibold text-[#1a3d2e] mb-3 leading-tight"
                     style={{ fontFamily: 'var(--font-cormorant)' }}>
-                  Karibu, {userData?.displayName?.split(' ')[0] || 'Padre'}!
+                  {t(`Karibu, ${userData?.displayName?.split(' ')[0] || 'Padre'}!`, `Welcome, ${userData?.displayName?.split(' ')[0] || 'Padre'}!`)}
                 </h1>
                 <div className="h-px mb-6" style={{ background: 'linear-gradient(90deg, #c4933f, transparent)', opacity: 0.5, maxWidth: 80 }} />
                 <p className="text-ash leading-relaxed mb-4">
-                  Umealikwa kuwa Msimamizi wa Parokia kwenye mfumo wa <strong className="text-[#1a3d2e]">Misa Admin</strong>.
+                  {t('Umealikwa kuwa Msimamizi wa Parokia kwenye mfumo wa ', 'You have been invited as a Parish Admin on ')}
+                  <strong className="text-[#1a3d2e]">Misa Admin</strong>.
                 </p>
                 <p className="text-ash leading-relaxed mb-8">
-                  Hatua chache zinaendelea kukusaidia kusanidi parokia yako. Itachukua dakika 2–3 tu. Anza ukiwa tayari.
+                  {t('Hatua chache zinaendelea kukusaidia kusanidi parokia yako. Itachukua dakika 2–3 tu. Anza ukiwa tayari.', 'A few steps will help you set up your parish. It will take just 2–3 minutes. Start when you\'re ready.')}
                 </p>
                 <div className="p-4 rounded-xl border border-[#e8e3d8] bg-white mb-8">
                   <div className="flex items-start gap-3">
                     <span className="material-symbols-outlined text-[#c4933f] text-xl mt-0.5">info</span>
                     <div>
-                      <p className="text-sm font-semibold text-[#1a3d2e] mb-1">Utahitaji nini:</p>
+                      <p className="text-sm font-semibold text-[#1a3d2e] mb-1">{t('Utahitaji nini:', "What you'll need:")}</p>
                       <ul className="text-sm text-ash space-y-1">
-                        <li>• Jina kamili la parokia</li>
-                        <li>• Jimbo (Diocese) ambalo parokia iko</li>
-                        <li>• Anwani ya parokia</li>
-                        <li>• Eneo (GPS au coordinates) — hiari</li>
+                        <li>• {t('Jina kamili la parokia', 'Full name of the parish')}</li>
+                        <li>• {t('Jimbo (Diocese) ambalo parokia iko', 'Diocese the parish belongs to')}</li>
+                        <li>• {t('Anwani ya parokia', 'Parish address')}</li>
+                        <li>• {t('Eneo (GPS au coordinates) — hiari', 'Location (GPS or coordinates) — optional')}</li>
                       </ul>
                     </div>
                   </div>
@@ -205,41 +213,41 @@ export default function OnboardingPage() {
             {/* ── Step 1: Parish basics ── */}
             {step === 1 && (
               <div className="anim-fade-up">
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#c4933f] mb-3">Hatua ya 2</p>
+                <p className="text-xs font-semibold uppercase tracking-widest text-[#c4933f] mb-3">{t('Hatua ya 2', 'Step 2')}</p>
                 <h1 className="text-4xl font-semibold text-[#1a3d2e] mb-3 leading-tight"
                     style={{ fontFamily: 'var(--font-cormorant)' }}>
-                  Taarifa za Parokia
+                  {t('Taarifa za Parokia', 'Parish Information')}
                 </h1>
                 <div className="h-px mb-8" style={{ background: 'linear-gradient(90deg, #c4933f, transparent)', opacity: 0.5, maxWidth: 80 }} />
 
                 <div className="space-y-5">
                   <div>
-                    <label className={labelCls}>Jina la Parokia (Kiingereza) <span className="text-red-500 normal-case tracking-normal">*</span></label>
+                    <label className={labelCls}>{t('Jina la Parokia (Kiingereza)', 'Parish Name (English)')} <span className="text-red-500 normal-case tracking-normal">*</span></label>
                     <input type="text" value={form.name} onChange={e => update('name', e.target.value)}
                       className={inputCls} placeholder="St. Peter Parish" />
                   </div>
                   <div>
-                    <label className={labelCls}>Jina la Parokia (Kiswahili)</label>
+                    <label className={labelCls}>{t('Jina la Parokia (Kiswahili)', 'Parish Name (Swahili)')}</label>
                     <input type="text" value={form.nameSwahili} onChange={e => update('nameSwahili', e.target.value)}
                       className={inputCls} placeholder="Parokia ya Mt. Petro" />
                   </div>
                   <div>
-                    <label className={labelCls}>Jimbo (Diocese) <span className="text-red-500 normal-case tracking-normal">*</span></label>
+                    <label className={labelCls}>{t('Jimbo (Diocese)', 'Diocese')} <span className="text-red-500 normal-case tracking-normal">*</span></label>
                     <input type="text" value={form.diocese} onChange={e => update('diocese', e.target.value)}
                       className={inputCls} placeholder="Jimbo Kuu la Dar es Salaam" />
                   </div>
                   <div>
-                    <label className={labelCls}>Mkoa</label>
+                    <label className={labelCls}>{t('Mkoa', 'Region')}</label>
                     <input type="text" value={form.region} onChange={e => update('region', e.target.value)}
                       className={inputCls} placeholder="Dar es Salaam" />
                   </div>
                   <div>
-                    <label className={labelCls}>Anwani <span className="text-red-500 normal-case tracking-normal">*</span></label>
+                    <label className={labelCls}>{t('Anwani', 'Address')} <span className="text-red-500 normal-case tracking-normal">*</span></label>
                     <textarea value={form.address} onChange={e => update('address', e.target.value)}
                       rows={2} className={inputCls + ' resize-none'} placeholder="Masaki, Dar es Salaam, Tanzania" />
                   </div>
                   <div>
-                    <label className={labelCls}>Padre Paroko</label>
+                    <label className={labelCls}>{t('Padre Paroko', 'Parish Priest')}</label>
                     <input type="text" value={form.priestName} onChange={e => update('priestName', e.target.value)}
                       className={inputCls} placeholder="Padre Petro Makundi" />
                   </div>
@@ -250,16 +258,14 @@ export default function OnboardingPage() {
             {/* ── Step 2: Location ── */}
             {step === 2 && (
               <div className="anim-fade-up">
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#c4933f] mb-3">Hatua ya 3</p>
+                <p className="text-xs font-semibold uppercase tracking-widest text-[#c4933f] mb-3">{t('Hatua ya 3', 'Step 3')}</p>
                 <h1 className="text-4xl font-semibold text-[#1a3d2e] mb-3 leading-tight"
                     style={{ fontFamily: 'var(--font-cormorant)' }}>
-                  Mahali pa Kanisa
+                  {t('Mahali pa Kanisa', 'Church Location')}
                 </h1>
                 <div className="h-px mb-4" style={{ background: 'linear-gradient(90deg, #c4933f, transparent)', opacity: 0.5, maxWidth: 80 }} />
                 <p className="text-sm text-ash mb-6 leading-relaxed">
-                  Ukiwa kanisani sasa hivi, bonyeza "Pata Eneo Langu" — simu yako itajaza coordinates otomatiki.
-                  Kama kanisa lako lipo kwenye Google Maps, unaweza pia kupata coordinates kutoka hapo.
-                  Hatua hii ni ya hiari — unaweza kuruka na kuijaza baadaye.
+                  {t('Ukiwa kanisani sasa hivi, bonyeza "Pata Eneo Langu" — simu yako itajaza coordinates otomatiki. Kama kanisa lako lipo kwenye Google Maps, unaweza pia kupata coordinates kutoka hapo. Hatua hii ni ya hiari — unaweza kuruka na kuijaza baadaye.', 'If you are at the church right now, tap "Get My Location" — your phone will fill in the coordinates automatically. If your church is on Google Maps, you can also get coordinates from there. This step is optional — you can skip and fill it in later.')}
                 </p>
 
                 <button
@@ -272,18 +278,18 @@ export default function OnboardingPage() {
                   <span className={`material-symbols-outlined text-[20px] ${gettingLocation ? 'animate-spin' : ''}`}>
                     {gettingLocation ? 'progress_activity' : 'my_location'}
                   </span>
-                  {gettingLocation ? 'Inatafuta eneo lako…' : 'Pata Eneo Langu (GPS)'}
+                  {gettingLocation ? t('Inatafuta eneo lako…', 'Getting your location…') : t('Pata Eneo Langu (GPS)', 'Get My Location (GPS)')}
                 </button>
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className={labelCls}>Latitude</label>
-                    <input type="number" step="any" value={form.latitude} onChange={e => update('latitude', e.target.value)}
+                    <input type="text" inputMode="decimal" value={form.latitude} onChange={e => update('latitude', e.target.value)}
                       className={inputCls} placeholder="-6.7617" />
                   </div>
                   <div>
                     <label className={labelCls}>Longitude</label>
-                    <input type="number" step="any" value={form.longitude} onChange={e => update('longitude', e.target.value)}
+                    <input type="text" inputMode="decimal" value={form.longitude} onChange={e => update('longitude', e.target.value)}
                       className={inputCls} placeholder="39.2634" />
                   </div>
                 </div>
@@ -295,14 +301,14 @@ export default function OnboardingPage() {
                     className="inline-flex items-center gap-1.5 text-sm text-[#c4933f] hover:underline font-medium"
                   >
                     <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-                    Thibitisha eneo kwenye Google Maps
+                    {t('Thibitisha eneo kwenye Google Maps', 'Verify location on Google Maps')}
                   </a>
                 )}
 
                 {(form.latitude || form.longitude) && (
                   <div className="mt-4 p-3 bg-[#fef3c7] rounded-lg border border-[#fde68a]">
                     <p className="text-xs text-[#92400e]">
-                      <span className="font-semibold">Kumbuka:</span> Eneo lako litatumwa kwa msimamizi mkuu kwa idhini kabla halijatumika hadharani.
+                      <span className="font-semibold">{t('Kumbuka:', 'Note:')}</span> {t('Eneo lako litatumwa kwa msimamizi mkuu kwa idhini kabla halijatumika hadharani.', 'Your location will be sent to the super admin for approval before it is used publicly.')}
                     </p>
                   </div>
                 )}
@@ -312,22 +318,22 @@ export default function OnboardingPage() {
             {/* ── Step 3: Contact ── */}
             {step === 3 && (
               <div className="anim-fade-up">
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#c4933f] mb-3">Hatua ya 4</p>
+                <p className="text-xs font-semibold uppercase tracking-widest text-[#c4933f] mb-3">{t('Hatua ya 4', 'Step 4')}</p>
                 <h1 className="text-4xl font-semibold text-[#1a3d2e] mb-3 leading-tight"
                     style={{ fontFamily: 'var(--font-cormorant)' }}>
-                  Mawasiliano
+                  {t('Mawasiliano', 'Contact')}
                 </h1>
                 <div className="h-px mb-4" style={{ background: 'linear-gradient(90deg, #c4933f, transparent)', opacity: 0.5, maxWidth: 80 }} />
-                <p className="text-sm text-ash mb-6">Hizi ni za hiari — unaweza kuruka na kuzijaza baadaye kwenye ukurasa wa Taarifa za Parokia.</p>
+                <p className="text-sm text-ash mb-6">{t('Hizi ni za hiari — unaweza kuruka na kuzijaza baadaye kwenye ukurasa wa Taarifa za Parokia.', 'These are optional — you can skip and fill them in later on the Parish Info page.')}</p>
 
                 <div className="space-y-5">
                   <div>
-                    <label className={labelCls}>Namba ya Simu</label>
+                    <label className={labelCls}>{t('Namba ya Simu', 'Phone Number')}</label>
                     <input type="tel" value={form.phone} onChange={e => update('phone', e.target.value)}
                       className={inputCls} placeholder="+255 XXX XXX XXX" />
                   </div>
                   <div>
-                    <label className={labelCls}>Barua Pepe ya Parokia</label>
+                    <label className={labelCls}>{t('Barua Pepe ya Parokia', 'Parish Email')}</label>
                     <input type="email" value={form.email} onChange={e => update('email', e.target.value)}
                       className={inputCls} placeholder="info@parokia.com" />
                   </div>
@@ -335,14 +341,14 @@ export default function OnboardingPage() {
 
                 <div className="mt-8 p-5 rounded-xl border border-[#e8e3d8] bg-white">
                   <p className="text-sm font-semibold text-[#1a3d2e] mb-3" style={{ fontFamily: 'var(--font-cormorant)', fontSize: '1.1rem' }}>
-                    Muhtasari wa Parokia Yako
+                    {t('Muhtasari wa Parokia Yako', 'Your Parish Summary')}
                   </p>
                   <div className="space-y-2 text-sm text-ash">
-                    <p><span className="font-medium text-ink">Jina:</span> {form.name}</p>
-                    <p><span className="font-medium text-ink">Jimbo:</span> {form.diocese}</p>
-                    <p><span className="font-medium text-ink">Anwani:</span> {form.address}</p>
-                    {form.priestName && <p><span className="font-medium text-ink">Padre:</span> {form.priestName}</p>}
-                    {form.latitude && <p><span className="font-medium text-ink">Eneo:</span> {parseFloat(form.latitude).toFixed(4)}, {parseFloat(form.longitude).toFixed(4)}</p>}
+                    <p><span className="font-medium text-ink">{t('Jina', 'Name')}:</span> {form.name}</p>
+                    <p><span className="font-medium text-ink">{t('Jimbo', 'Diocese')}:</span> {form.diocese}</p>
+                    <p><span className="font-medium text-ink">{t('Anwani', 'Address')}:</span> {form.address}</p>
+                    {form.priestName && <p><span className="font-medium text-ink">{t('Padre', 'Priest')}:</span> {form.priestName}</p>}
+                    {form.latitude && <p><span className="font-medium text-ink">{t('Eneo', 'Location')}:</span> {parseFloat(form.latitude).toFixed(4)}, {parseFloat(form.longitude).toFixed(4)}</p>}
                   </div>
                 </div>
               </div>
@@ -356,7 +362,7 @@ export default function OnboardingPage() {
                   className="flex items-center gap-2 px-5 py-3 rounded-xl border border-[#d4cfc4] text-ash text-sm font-medium hover:border-[#c4933f] hover:text-[#c4933f] transition-all"
                 >
                   <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-                  Rudi
+                  {t('Rudi', 'Back')}
                 </button>
               )}
 
@@ -366,7 +372,7 @@ export default function OnboardingPage() {
                   disabled={!canNext()}
                   className="btn-gold ml-auto"
                 >
-                  Endelea
+                  {t('Endelea', 'Continue')}
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
               ) : (
@@ -376,8 +382,8 @@ export default function OnboardingPage() {
                   className="btn-gold ml-auto"
                 >
                   {saving
-                    ? <><span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>Inahifadhi…</>
-                    : <><span className="material-symbols-outlined text-[18px]">check_circle</span>Maliza Usanidi</>
+                    ? <><span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>{t('Inahifadhi…', 'Saving…')}</>
+                    : <><span className="material-symbols-outlined text-[18px]">check_circle</span>{t('Maliza Usanidi', 'Finish Setup')}</>
                   }
                 </button>
               )}

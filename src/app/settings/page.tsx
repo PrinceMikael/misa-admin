@@ -8,9 +8,48 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/contexts/LanguageContext';
 import DashboardLayout from '@/components/DashboardLayout';
+
+// Module-level constant and component — never recreated on re-render, so
+// inputs inside PasswordInput retain focus across keystrokes.
+const labelClass = 'block text-[11px] uppercase tracking-wider font-semibold text-[#1a3d2e]/60 dark:text-[#e8e3d8]/60 mb-1.5';
+
+function PasswordInput({
+  label, value, onChange, show, onToggle, placeholder, autoComplete,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  show: boolean; onToggle: () => void; placeholder?: string; autoComplete?: string;
+}) {
+  return (
+    <div>
+      <label className={labelClass}>{label}</label>
+      <div className="relative">
+        <input
+          type={show ? 'text' : 'password'}
+          required
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          autoComplete={autoComplete}
+          placeholder={placeholder}
+          className="input-illuminated pr-12"
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-ash hover:text-[#1a3d2e] dark:hover:text-[#e8e3d8] transition-colors"
+        >
+          <span className="material-symbols-outlined text-xl">
+            {show ? 'visibility_off' : 'visibility'}
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { user, userData } = useAuth();
@@ -93,47 +132,25 @@ export default function SettingsPage() {
     }
   };
 
-  const labelClass = 'block text-[11px] uppercase tracking-wider font-semibold text-[#1a3d2e]/60 dark:text-[#e8e3d8]/60 mb-1.5';
-
-  const PasswordInput = ({
-    label, value, onChange, show, onToggle, placeholder, autoComplete,
-  }: {
-    label: string; value: string; onChange: (v: string) => void;
-    show: boolean; onToggle: () => void; placeholder?: string; autoComplete?: string;
-  }) => (
-    <div>
-      <label className={labelClass}>{label}</label>
-      <div className="relative">
-        <input
-          type={show ? 'text' : 'password'}
-          required
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          autoComplete={autoComplete}
-          placeholder={placeholder}
-          className="input-illuminated pr-12"
-        />
-        <button
-          type="button"
-          onClick={onToggle}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-ash hover:text-[#1a3d2e] dark:hover:text-[#e8e3d8] transition-colors"
-        >
-          <span className="material-symbols-outlined text-xl">
-            {show ? 'visibility_off' : 'visibility'}
-          </span>
-        </button>
-      </div>
-    </div>
-  );
+  const t = useTranslation();
+  const router = useRouter();
 
   return (
     <DashboardLayout>
       <div className="p-4 sm:p-6 lg:p-8 max-w-2xl">
         <div className="mb-6 sm:mb-8">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-1.5 text-sm text-ash dark:text-[#6b9080] hover:text-[#1a3d2e] dark:hover:text-[#e8e3d8] mb-4 transition-colors group"
+          >
+            <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+            {t('Rudi', 'Back')}
+          </button>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#1a3d2e] dark:text-[#e8e3d8] mb-1">
-            Mipangilio
+            {t('Mipangilio', 'Settings')}
           </h1>
-          <p className="text-ash">Simamia akaunti yako na mapendeleo</p>
+          <p className="text-ash">{t('Simamia akaunti yako na mapendeleo', 'Manage your account and preferences')}</p>
         </div>
 
         <div className="space-y-5">
@@ -141,15 +158,15 @@ export default function SettingsPage() {
           {/* Account Info */}
           <div className="card rounded-2xl p-6">
             <h2 className="text-lg font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] mb-4">
-              Taarifa za Akaunti
+              {t('Taarifa za Akaunti', 'Account Info')}
             </h2>
             <div className="space-y-0 text-sm">
               <div className="flex justify-between items-center py-3 border-b border-[#e8e3d8] dark:border-[#253d2e]">
-                <span className="text-ash">Barua Pepe</span>
+                <span className="text-ash">{t('Barua Pepe', 'Email')}</span>
                 <span className="font-medium text-[#1a3d2e] dark:text-[#e8e3d8]">{userData?.email}</span>
               </div>
               <div className="flex justify-between items-center py-3 border-b border-[#e8e3d8] dark:border-[#253d2e]">
-                <span className="text-ash">Jukumu</span>
+                <span className="text-ash">{t('Jukumu', 'Role')}</span>
                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                   userData?.role === 'SUPER_ADMIN'
                     ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
@@ -172,7 +189,7 @@ export default function SettingsPage() {
           {/* Edit Profile */}
           <div className="card rounded-2xl p-6">
             <h2 className="text-lg font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] mb-4">
-              Hariri Wasifu
+              {t('Hariri Wasifu', 'Edit Profile')}
             </h2>
 
             {profileSuccess && (
@@ -188,7 +205,7 @@ export default function SettingsPage() {
 
             <form onSubmit={handleProfileSave} className="space-y-4">
               <div>
-                <label className={labelClass}>Jina Kamili</label>
+                <label className={labelClass}>{t('Jina Kamili', 'Full Name')}</label>
                 <input
                   type="text"
                   value={displayName}
@@ -206,12 +223,12 @@ export default function SettingsPage() {
                 {savingProfile ? (
                   <>
                     <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
-                    Inahifadhi...
+                    {t('Inahifadhi...', 'Saving...')}
                   </>
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-base">save</span>
-                    Hifadhi Wasifu
+                    {t('Hifadhi Wasifu', 'Save Profile')}
                   </>
                 )}
               </button>
@@ -221,10 +238,10 @@ export default function SettingsPage() {
           {/* Change Password */}
           <div className="card rounded-2xl p-6">
             <h2 className="text-lg font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] mb-1">
-              Badilisha Nenosiri
+              {t('Badilisha Nenosiri', 'Change Password')}
             </h2>
             <p className="text-sm text-ash mb-5">
-              Lazima uweke nenosiri la sasa ili kubadilisha.
+              {t('Lazima uweke nenosiri la sasa ili kubadilisha.', 'You must enter your current password to change it.')}
             </p>
 
             {passwordSuccess && (
@@ -240,7 +257,7 @@ export default function SettingsPage() {
 
             <form onSubmit={handlePasswordChange} className="space-y-4">
               <PasswordInput
-                label="Nenosiri la Sasa"
+                label={t('Nenosiri la Sasa', 'Current Password')}
                 value={currentPassword}
                 onChange={setCurrentPassword}
                 show={showCurrentPw}
@@ -248,16 +265,16 @@ export default function SettingsPage() {
                 autoComplete="current-password"
               />
               <PasswordInput
-                label="Nenosiri Jipya"
+                label={t('Nenosiri Jipya', 'New Password')}
                 value={newPassword}
                 onChange={setNewPassword}
                 show={showNewPw}
                 onToggle={() => setShowNewPw(!showNewPw)}
-                placeholder="Herufi 8 au zaidi"
+                placeholder={t('Herufi 8 au zaidi', '8+ characters')}
                 autoComplete="new-password"
               />
               <PasswordInput
-                label="Thibitisha Nenosiri Jipya"
+                label={t('Thibitisha Nenosiri Jipya', 'Confirm New Password')}
                 value={confirmPassword}
                 onChange={setConfirmPassword}
                 show={showConfirmPw}
@@ -272,12 +289,12 @@ export default function SettingsPage() {
                 {savingPassword ? (
                   <>
                     <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
-                    Inabadilisha...
+                    {t('Inabadilisha...', 'Updating...')}
                   </>
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-base">lock_reset</span>
-                    Badilisha Nenosiri
+                    {t('Badilisha Nenosiri', 'Change Password')}
                   </>
                 )}
               </button>
@@ -286,13 +303,13 @@ export default function SettingsPage() {
 
           {/* Help */}
           <div className="card rounded-2xl p-6">
-            <h2 className="text-lg font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] mb-2">Msaada</h2>
+            <h2 className="text-lg font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] mb-2">{t('Msaada', 'Help')}</h2>
             <p className="text-ash mb-4 text-sm">
-              Unahitaji msaada? Wasiliana na msimamizi wa jimbo lako au tuma barua pepe.
+              {t('Unahitaji msaada? Wasiliana na msimamizi wa jimbo lako au tuma barua pepe.', 'Need help? Contact your diocese administrator or send an email.')}
             </p>
             <a href="mailto:support@misa.app" className="btn-gold text-sm">
               <span className="material-symbols-outlined text-base">email</span>
-              Wasiliana na Msaada
+              {t('Wasiliana na Msaada', 'Contact Support')}
             </a>
           </div>
 

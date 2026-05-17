@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/contexts/LanguageContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import SuperAdminRoute from '@/components/SuperAdminRoute';
 import { Parish, User } from '@/types';
@@ -71,6 +73,8 @@ const ADMIN_BADGE: Record<string, string> = {
 
 export default function SuperAnalyticsPage() {
   const { loading: authLoading } = useAuth();
+  const t = useTranslation();
+  const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -171,14 +175,22 @@ export default function SuperAnalyticsPage() {
           {/* Header */}
           <div className="flex items-start justify-between gap-4 mb-6 anim-fade-up">
             <div>
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="inline-flex items-center gap-1.5 text-sm text-ash dark:text-[#6b9080] hover:text-[#1a3d2e] dark:hover:text-[#e8e3d8] mb-4 transition-colors group"
+              >
+                <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+                {t('Rudi', 'Back')}
+              </button>
               <h1
                 className="text-4xl sm:text-5xl font-semibold leading-none text-[#1a3d2e] dark:text-[#e8e3d8]"
                 style={{ fontFamily: 'var(--font-cormorant)' }}
               >
-                Takwimu za Mfumo
+                {t('Takwimu za Mfumo', 'System Analytics')}
               </h1>
               <p className="text-sm text-ash dark:text-[#6b9080] mt-2">
-                Muhtasari wa parokia zote
+                {t('Muhtasari wa parokia zote', 'Overview of all parishes')}
               </p>
               <hr className="gold-rule mt-4 max-w-20" />
             </div>

@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, Timestamp, orderBy } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useRouter } from 'next/navigation';
 import { db, storage } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/contexts/LanguageContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Notice } from '@/types';
 
@@ -31,6 +33,8 @@ const CATEGORY_ICON: Record<string, string> = {
 
 export default function NoticesPage() {
   const { userData } = useAuth();
+  const t = useTranslation();
+  const router = useRouter();
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -165,21 +169,29 @@ export default function NoticesPage() {
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-6 anim-fade-up">
           <div>
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="inline-flex items-center gap-1.5 text-sm text-ash dark:text-[#6b9080] hover:text-[#1a3d2e] dark:hover:text-[#e8e3d8] mb-4 transition-colors group"
+            >
+              <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+              {t('Rudi', 'Back')}
+            </button>
             <h1
               className="text-4xl sm:text-5xl font-semibold leading-none text-[#1a3d2e] dark:text-[#e8e3d8]"
               style={{ fontFamily: 'var(--font-cormorant)' }}
             >
-              Matangazo
+              {t('Matangazo', 'Notices')}
             </h1>
             <p className="text-sm text-ash dark:text-[#6b9080] mt-2">
-              Simamia matangazo na taarifa za parokia yako
+              {t('Simamia matangazo na taarifa za parokia yako', 'Manage your parish notices and announcements')}
             </p>
             <hr className="gold-rule mt-4 max-w-20" />
           </div>
           <button onClick={() => setShowForm(true)} className="btn-gold shrink-0 mt-1">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            <span className="hidden sm:inline">Ongeza Tangazo</span>
-            <span className="sm:hidden">Ongeza</span>
+            <span className="hidden sm:inline">{t('Ongeza Tangazo', 'Add Notice')}</span>
+            <span className="sm:hidden">{t('Ongeza', 'Add')}</span>
           </button>
         </div>
 

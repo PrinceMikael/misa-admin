@@ -3,10 +3,35 @@
 import { useEffect, useState, useCallback } from 'react';
 import { doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useRouter } from 'next/navigation';
 import { db, storage } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/contexts/LanguageContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Parish, LiturgicalSeason } from '@/types';
+
+// Module-level components — defined outside ParishPage so they are never
+// recreated on re-render, which would cause inputs to lose focus mid-typing.
+function Label({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="block text-[11px] font-semibold uppercase tracking-wider text-ash dark:text-[#5a8070] mb-1.5">
+      {children}
+    </label>
+  );
+}
+
+function SectionCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <div className="card p-5 sm:p-6">
+      <h2 className="text-xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8]" style={{ fontFamily: 'var(--font-cormorant)' }}>
+        {title}
+      </h2>
+      {subtitle && <p className="text-[12px] text-ash dark:text-[#5a8070] mt-1 mb-3">{subtitle}</p>}
+      <hr className="gold-rule my-3" />
+      {children}
+    </div>
+  );
+}
 
 const SEASON_OPTIONS = [
   { value: 'ordinary_time', label: 'Wakati wa Kawaida' },
@@ -173,22 +198,8 @@ export default function ParishPage() {
     }
   };
 
-  const Label = ({ children }: { children: React.ReactNode }) => (
-    <label className="block text-[11px] font-semibold uppercase tracking-wider text-ash dark:text-[#5a8070] mb-1.5">
-      {children}
-    </label>
-  );
-
-  const SectionCard = ({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) => (
-    <div className="card p-5 sm:p-6">
-      <h2 className="text-xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8]" style={{ fontFamily: 'var(--font-cormorant)' }}>
-        {title}
-      </h2>
-      {subtitle && <p className="text-[12px] text-ash dark:text-[#5a8070] mt-1 mb-3">{subtitle}</p>}
-      <hr className="gold-rule my-3" />
-      {children}
-    </div>
-  );
+  const t = useTranslation();
+  const router = useRouter();
 
   return (
     <DashboardLayout>
@@ -196,14 +207,22 @@ export default function ParishPage() {
 
         {/* Header */}
         <div className="mb-6 anim-fade-up">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-1.5 text-sm text-ash dark:text-[#6b9080] hover:text-[#1a3d2e] dark:hover:text-[#e8e3d8] mb-4 transition-colors group"
+          >
+            <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+            {t('Rudi', 'Back')}
+          </button>
           <h1
             className="text-4xl sm:text-5xl font-semibold leading-none text-[#1a3d2e] dark:text-[#e8e3d8]"
             style={{ fontFamily: 'var(--font-cormorant)' }}
           >
-            Taarifa za Parokia
+            {t('Taarifa za Parokia', 'Parish Information')}
           </h1>
           <p className="text-sm text-ash dark:text-[#6b9080] mt-2">
-            Simamia taarifa na mawasiliano ya parokia yako
+            {t('Simamia taarifa na mawasiliano ya parokia yako', 'Manage your parish info and contact details')}
           </p>
           <hr className="gold-rule mt-4 max-w-20" />
         </div>
@@ -229,7 +248,7 @@ export default function ParishPage() {
             )}
 
             {/* Basic Info */}
-            <SectionCard title="Taarifa za Msingi">
+            <SectionCard title={t('Taarifa za Msingi', 'Basic Information')}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Jina la Parokia (Kiingereza) <span className="text-[#c4933f]">*</span></Label>
@@ -279,7 +298,7 @@ export default function ParishPage() {
             </SectionCard>
 
             {/* M-Pesa & Office */}
-            <SectionCard title="M-Pesa na Ofisi">
+            <SectionCard title={t('M-Pesa na Ofisi', 'M-Pesa & Office')}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Namba ya Till ya M-Pesa</Label>
@@ -298,8 +317,8 @@ export default function ParishPage() {
 
             {/* Location */}
             <SectionCard
-              title="Mahali pa Kanisa"
-              subtitle="Bonyeza 'Pata Eneo Langu' ukiwa kanisani, au jaza mikono. Mabadiliko yatatumwa kwa msimamizi mkuu kwa idhini."
+              title={t('Mahali pa Kanisa', 'Church Location')}
+              subtitle={t("Bonyeza 'Pata Eneo Langu' ukiwa kanisani, au jaza mikono. Mabadiliko yatatumwa kwa msimamizi mkuu kwa idhini.", "Press 'Get My Location' while at the church, or fill in manually. Changes are sent to the super admin for approval.")}
             >
               {/* Status badge */}
               {locationStatus && (
@@ -334,7 +353,7 @@ export default function ParishPage() {
                 <span className={`material-symbols-outlined text-[18px] ${gettingLocation ? 'animate-spin' : ''}`}>
                   {gettingLocation ? 'progress_activity' : 'my_location'}
                 </span>
-                {gettingLocation ? 'Inatafuta eneo…' : 'Pata Eneo Langu (GPS)'}
+                {gettingLocation ? t('Inatafuta eneo…', 'Getting location…') : t('Pata Eneo Langu (GPS)', 'Get My Location (GPS)')}
               </button>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -362,7 +381,7 @@ export default function ParishPage() {
             </SectionCard>
 
             {/* Contact */}
-            <SectionCard title="Mawasiliano">
+            <SectionCard title={t('Mawasiliano', 'Contact')}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Namba ya Simu</Label>
@@ -376,7 +395,7 @@ export default function ParishPage() {
             </SectionCard>
 
             {/* Liturgical Season */}
-            <SectionCard title="Kipindi cha Liturujia" subtitle="Weka kipindi cha sasa cha Kanisa ili kionyeshwe kwa waumini kwenye programu.">
+            <SectionCard title={t('Kipindi cha Liturujia', 'Liturgical Season')} subtitle={t('Weka kipindi cha sasa cha Kanisa ili kionyeshwe kwa waumini kwenye programu.', 'Set the current church season to display to the faithful in the app.')}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Kipindi cha Sasa</Label>
@@ -397,7 +416,7 @@ export default function ParishPage() {
             </SectionCard>
 
             {/* Parish Photos */}
-            <SectionCard title="Picha za Parokia" subtitle="Unaweza kupakia picha nyingi za parokia yako.">
+            <SectionCard title={t('Picha za Parokia', 'Parish Photos')} subtitle={t('Unaweza kupakia picha nyingi za parokia yako.', 'You can upload multiple photos of your parish.')}>
               {formData.imageUrls.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
                   {formData.imageUrls.map((url, i) => (
@@ -427,7 +446,7 @@ export default function ParishPage() {
               }`}>
                 <span className="material-symbols-outlined text-[22px] text-ash">add_photo_alternate</span>
                 <span className="text-sm text-ash dark:text-[#6b9080]">
-                  {uploading ? 'Inapakia picha…' : 'Ongeza picha (unaweza kuchagua nyingi)'}
+                  {uploading ? t('Inapakia picha…', 'Uploading…') : t('Ongeza picha (unaweza kuchagua nyingi)', 'Add photos (you can select multiple)')}
                 </span>
                 <input type="file" accept="image/*" multiple onChange={handleImageUpload} disabled={uploading} className="hidden" />
               </label>
@@ -442,12 +461,12 @@ export default function ParishPage() {
               {saving ? (
                 <>
                   <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
-                  Inahifadhi…
+                  {t('Inahifadhi…', 'Saving…')}
                 </>
               ) : (
                 <>
                   <span className="material-symbols-outlined text-[18px]">save</span>
-                  Hifadhi Mabadiliko
+                  {t('Hifadhi Mabadiliko', 'Save Changes')}
                 </>
               )}
             </button>

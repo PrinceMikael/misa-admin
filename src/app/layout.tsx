@@ -4,6 +4,7 @@ import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -41,13 +42,15 @@ export default function RootLayout({
         />
       </head>
       <body className={`${dmSans.variable} ${cormorant.variable} font-sans antialiased`}>
-        <ThemeProvider>
-          <AuthProvider>
-            <NotificationsProvider>
-              {children}
-            </NotificationsProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <LanguageProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <NotificationsProvider>
+                {children}
+              </NotificationsProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

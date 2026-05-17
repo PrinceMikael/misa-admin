@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/contexts/LanguageContext';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { MassSchedule, MassIntention } from '@/types';
@@ -31,6 +32,7 @@ const DAY_NAMES = ['Jumapili', 'Jumatatu', 'Jumanne', 'Jumatano', 'Alhamisi', 'I
 export default function DashboardPage() {
   const { userData, isSuperAdmin, loading: authLoading } = useAuth();
   const router = useRouter();
+  const t = useTranslation();
   const [stats, setStats] = useState({ totalSchedules: 0, pendingIntentions: 0, approvedIntentions: 0, totalNotices: 0 });
   const [recentIntentions, setRecentIntentions] = useState<MassIntention[]>([]);
   const [todaySchedules, setTodaySchedules] = useState<MassSchedule[]>([]);
@@ -120,7 +122,7 @@ export default function DashboardPage() {
             className="text-4xl sm:text-5xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] leading-tight"
             style={{ fontFamily: 'var(--font-cormorant)' }}
           >
-            Dashibodi
+            {t('Dashibodi', 'Dashboard')}
           </h1>
           <hr className="gold-rule mt-4 max-w-30" />
         </div>
@@ -140,10 +142,10 @@ export default function DashboardPage() {
             {/* Stat band */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               {[
-                { label: 'Ratiba', value: stats.totalSchedules,     icon: 'calendar_month', delay: 'anim-delay-1' },
-                { label: 'Zinazosubiri', value: stats.pendingIntentions, icon: 'pending',    delay: 'anim-delay-2', highlight: stats.pendingIntentions > 0 },
-                { label: 'Zimeidhinishwa', value: stats.approvedIntentions, icon: 'check_circle', delay: 'anim-delay-3' },
-                { label: 'Matangazo',   value: stats.totalNotices,   icon: 'campaign',       delay: 'anim-delay-4' },
+                { label: t('Ratiba', 'Schedules'), value: stats.totalSchedules,     icon: 'calendar_month', delay: 'anim-delay-1' },
+                { label: t('Zinazosubiri', 'Pending'), value: stats.pendingIntentions, icon: 'pending',    delay: 'anim-delay-2', highlight: stats.pendingIntentions > 0 },
+                { label: t('Zimeidhinishwa', 'Approved'), value: stats.approvedIntentions, icon: 'check_circle', delay: 'anim-delay-3' },
+                { label: t('Matangazo', 'Notices'),   value: stats.totalNotices,   icon: 'campaign',       delay: 'anim-delay-4' },
               ].map((s) => (
                 <div key={s.label} className={`card stat-card p-5 anim-fade-up ${s.delay}`}>
                   <div className="flex items-start justify-between mb-3">
@@ -178,7 +180,7 @@ export default function DashboardPage() {
                     className="text-xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8]"
                     style={{ fontFamily: 'var(--font-cormorant)' }}
                   >
-                    Misa za Leo
+                    {t("Misa za Leo", "Today's Masses")}
                   </h2>
                   <Link
                     href="/schedules"
@@ -227,7 +229,7 @@ export default function DashboardPage() {
                     className="text-xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8]"
                     style={{ fontFamily: 'var(--font-cormorant)' }}
                   >
-                    Nia za Hivi Karibuni
+                    {t('Nia za Hivi Karibuni', 'Recent Intentions')}
                   </h2>
                   <Link
                     href="/intentions"

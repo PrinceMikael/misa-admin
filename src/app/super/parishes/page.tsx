@@ -12,7 +12,9 @@ import {
   orderBy,
   query,
 } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
+import { useTranslation } from '@/contexts/LanguageContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import SuperAdminRoute from '@/components/SuperAdminRoute';
 import { Parish } from '@/types';
@@ -37,6 +39,8 @@ type FormData = typeof emptyForm;
 const labelClass = 'block text-[11px] uppercase tracking-wider font-semibold text-[#1a3d2e]/60 dark:text-[#e8e3d8]/60 mb-1.5';
 
 export default function SuperParishesPage() {
+  const t = useTranslation();
+  const router = useRouter();
   const [parishes, setParishes] = useState<Parish[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -202,16 +206,24 @@ export default function SuperParishesPage() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="inline-flex items-center gap-1.5 text-sm text-ash dark:text-[#6b9080] hover:text-[#1a3d2e] dark:hover:text-[#e8e3d8] mb-3 transition-colors group"
+              >
+                <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+                {t('Rudi', 'Back')}
+              </button>
               <h1 className="text-2xl sm:text-3xl font-bold text-[#1a3d2e] dark:text-[#e8e3d8]">
-                Parokia Zote
+                {t('Parokia Zote', 'All Parishes')}
               </h1>
               <p className="text-ash mt-1">
-                {loading ? '...' : `Parokia ${parishes.length} zimeandikishwa`}
+                {loading ? '...' : t(`Parokia ${parishes.length} zimeandikishwa`, `${parishes.length} parishes registered`)}
               </p>
             </div>
             <button onClick={openCreate} className="btn-gold">
               <span className="material-symbols-outlined">add</span>
-              Ongeza Parokia
+              {t('Ongeza Parokia', 'Add Parish')}
             </button>
           </div>
 
@@ -532,8 +544,8 @@ export default function SuperParishesPage() {
                     <div>
                       <label className="block text-xs text-ash mb-1.5">Latitude</label>
                       <input
-                        type="number"
-                        step="any"
+                        type="text"
+                        inputMode="decimal"
                         required
                         value={formData.latitude}
                         onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
@@ -544,8 +556,8 @@ export default function SuperParishesPage() {
                     <div>
                       <label className="block text-xs text-ash mb-1.5">Longitude</label>
                       <input
-                        type="number"
-                        step="any"
+                        type="text"
+                        inputMode="decimal"
                         required
                         value={formData.longitude}
                         onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}

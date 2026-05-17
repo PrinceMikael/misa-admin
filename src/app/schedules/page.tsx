@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, Timestamp, orderBy } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/contexts/LanguageContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import { MassSchedule } from '@/types';
 
@@ -23,6 +25,8 @@ const SPECIAL_LABELS = ['Ijumaa ya Kwanza', 'Siku Takatifu', 'Maungamo', 'Novena
 
 export default function SchedulesPage() {
   const { userData } = useAuth();
+  const t = useTranslation();
+  const router = useRouter();
   const [schedules, setSchedules] = useState<MassSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -149,14 +153,22 @@ export default function SchedulesPage() {
         {/* Header */}
         <div className="flex items-start justify-between gap-4 mb-6 anim-fade-up">
           <div>
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="inline-flex items-center gap-1.5 text-sm text-ash dark:text-[#6b9080] hover:text-[#1a3d2e] dark:hover:text-[#e8e3d8] mb-4 transition-colors group"
+            >
+              <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+              {t('Rudi', 'Back')}
+            </button>
             <h1
               className="text-4xl sm:text-5xl font-semibold leading-none text-[#1a3d2e] dark:text-[#e8e3d8]"
               style={{ fontFamily: 'var(--font-cormorant)' }}
             >
-              Ratiba za Misa
+              {t('Ratiba za Misa', 'Mass Schedules')}
             </h1>
             <p className="text-sm text-ash dark:text-[#6b9080] mt-2">
-              Simamia ratiba za Misa za parokia yako
+              {t('Simamia ratiba za Misa za parokia yako', 'Manage your parish mass schedules')}
             </p>
             <hr className="gold-rule mt-4 max-w-20" />
           </div>
@@ -165,8 +177,8 @@ export default function SchedulesPage() {
             className="btn-gold shrink-0 mt-1"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
-            <span className="hidden sm:inline">Ongeza Ratiba</span>
-            <span className="sm:hidden">Ongeza</span>
+            <span className="hidden sm:inline">{t('Ongeza Ratiba', 'Add Schedule')}</span>
+            <span className="sm:hidden">{t('Ongeza', 'Add')}</span>
           </button>
         </div>
 

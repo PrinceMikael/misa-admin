@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 function LoginForm() {
   const [email, setEmail]       = useState('');
@@ -10,6 +11,7 @@ function LoginForm() {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
   const { signIn, user } = useAuth();
+  const t = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -29,7 +31,7 @@ function LoginForm() {
       await signIn(email, password);
       router.push(returnTo);
     } catch {
-      setError('Barua pepe au nenosiri si sahihi. Tafadhali jaribu tena.');
+      setError(t('Barua pepe au nenosiri si sahihi. Tafadhali jaribu tena.', 'Incorrect email or password. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -74,7 +76,7 @@ function LoginForm() {
                 Misa Admin
               </p>
               <p className="text-[#4d7a63] text-[11px] uppercase tracking-widest font-medium">
-                Mfumo wa Parokia
+                {t('Mfumo wa Parokia', 'Parish System')}
               </p>
             </div>
           </div>
@@ -122,10 +124,10 @@ function LoginForm() {
               className="text-4xl font-semibold text-[#1a3d2e] dark:text-[#e8e3d8] mb-2 leading-tight"
               style={{ fontFamily: 'var(--font-cormorant)' }}
             >
-              Karibu tena.
+              {t('Karibu tena.', 'Welcome back.')}
             </h1>
             <p className="text-ash dark:text-[#6b9080] text-sm">
-              Ingia ili kuendelea kusimamia parokia yako.
+              {t('Ingia ili kuendelea kusimamia parokia yako.', 'Sign in to continue managing your parish.')}
             </p>
           </div>
 
@@ -133,7 +135,7 @@ function LoginForm() {
             {errorParam === 'disabled' && (
               <div className="flex items-start gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/40">
                 <span className="material-symbols-outlined text-amber-500 text-[18px] mt-0.5 shrink-0">block</span>
-                <p className="text-sm text-amber-700 dark:text-amber-400">Akaunti yako imezuiwa. Wasiliana na msimamizi mkuu ili kupata msaada.</p>
+                <p className="text-sm text-amber-700 dark:text-amber-400">{t('Akaunti yako imezuiwa. Wasiliana na msimamizi mkuu ili kupata msaada.', 'Your account has been disabled. Contact the super admin for help.')}</p>
               </div>
             )}
             {error && (
@@ -145,7 +147,7 @@ function LoginForm() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-widest text-ash dark:text-[#4d7a63] mb-2">
-                Barua Pepe
+                {t('Barua Pepe', 'Email')}
               </label>
               <input
                 type="email"
@@ -159,7 +161,7 @@ function LoginForm() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-widest text-ash dark:text-[#4d7a63] mb-2">
-                Nenosiri
+                {t('Nenosiri', 'Password')}
               </label>
               <input
                 type="password"
@@ -179,12 +181,12 @@ function LoginForm() {
               {loading ? (
                 <>
                   <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-                  Inaingia…
+                  {t('Inaingia…', 'Signing in…')}
                 </>
               ) : (
                 <>
                   <span className="material-symbols-outlined text-[18px]">login</span>
-                  Ingia
+                  {t('Ingia', 'Sign In')}
                 </>
               )}
             </button>
@@ -195,7 +197,7 @@ function LoginForm() {
           </div>
 
           <p className="text-xs text-[#a09a8e] dark:text-[#4d7a63] text-center anim-fade-up anim-delay-2">
-            Huna akaunti? Wasiliana na msimamizi wa jimbo lako.
+            {t('Huna akaunti? Wasiliana na msimamizi wa jimbo lako.', "Don't have an account? Contact your diocese administrator.")}
           </p>
         </div>
       </div>

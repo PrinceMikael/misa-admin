@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
+import { useLanguage, useTranslation } from '@/contexts/LanguageContext';
 
 interface NavItem {
   href: string;
@@ -12,26 +13,28 @@ interface NavItem {
   label: string;
 }
 
-const parishNavItems: NavItem[] = [
-  { href: '/dashboard',  icon: 'dashboard',       label: 'Dashibodi' },
-  { href: '/parish',     icon: 'church',           label: 'Taarifa za Parokia' },
-  { href: '/schedules',  icon: 'calendar_month',   label: 'Ratiba za Misa' },
-  { href: '/intentions', icon: 'assignment',       label: 'Nia za Misa' },
-  { href: '/notices',    icon: 'campaign',         label: 'Matangazo' },
-  { href: '/settings',   icon: 'settings',         label: 'Mipangilio' },
-];
-
-const superNavItems: NavItem[] = [
-  { href: '/super/parishes',  icon: 'location_city',   label: 'Parokia Zote' },
-  { href: '/super/admins',    icon: 'manage_accounts', label: 'Wasimamizi' },
-  { href: '/super/analytics', icon: 'bar_chart',       label: 'Takwimu' },
-];
-
 export default function Sidebar() {
   const pathname = usePathname();
   const { userData, isSuperAdmin, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { pendingCount } = useNotifications();
+  const { lang, setLang } = useLanguage();
+  const t = useTranslation();
+
+  const parishNavItems: NavItem[] = [
+    { href: '/dashboard',  icon: 'dashboard',       label: t('Dashibodi', 'Dashboard') },
+    { href: '/parish',     icon: 'church',           label: t('Taarifa za Parokia', 'Parish Info') },
+    { href: '/schedules',  icon: 'calendar_month',   label: t('Ratiba za Misa', 'Mass Schedules') },
+    { href: '/intentions', icon: 'assignment',       label: t('Nia za Misa', 'Intentions') },
+    { href: '/notices',    icon: 'campaign',         label: t('Matangazo', 'Notices') },
+    { href: '/settings',   icon: 'settings',         label: t('Mipangilio', 'Settings') },
+  ];
+
+  const superNavItems: NavItem[] = [
+    { href: '/super/parishes',  icon: 'location_city',   label: t('Parokia Zote', 'All Parishes') },
+    { href: '/super/admins',    icon: 'manage_accounts', label: t('Wasimamizi', 'Admins') },
+    { href: '/super/analytics', icon: 'bar_chart',       label: t('Takwimu', 'Analytics') },
+  ];
 
   const handleSignOut = async () => {
     try { await signOut(); } catch (e) { console.error(e); }
@@ -124,7 +127,7 @@ export default function Sidebar() {
       {/* ── Navigation ── */}
       <nav className="flex-1 min-h-0 overflow-y-auto px-1.5 lg:px-2.5 py-3">
         <p className="hidden lg:block px-3 mb-1.5 text-[9px] font-bold uppercase tracking-[0.2em] text-[#3a5e4a]">
-          Parokia
+          {t('Parokia', 'Parish')}
         </p>
         <ul className="space-y-0.5">
           {parishNavItems.map((item) => (
@@ -178,6 +181,15 @@ export default function Sidebar() {
         )}
 
         <div className="space-y-0.5">
+          {/* Language toggle */}
+          <button
+            onClick={() => setLang(lang === 'sw' ? 'en' : 'sw')}
+            className="w-full flex items-center justify-center lg:justify-start gap-0 lg:gap-2.5 px-0 lg:px-3 py-2.5 lg:py-2 rounded-xl text-[#6b9080] hover:text-white hover:bg-white/7 text-[12px] font-medium transition-all"
+          >
+            <span className="material-symbols-outlined text-[18px] lg:text-[16px] shrink-0">translate</span>
+            <span className="hidden lg:inline">{lang === 'sw' ? 'English' : 'Kiswahili'}</span>
+            <span className="lg:hidden text-[10px] font-bold">{lang === 'sw' ? 'EN' : 'SW'}</span>
+          </button>
           <button
             onClick={toggleTheme}
             className="w-full flex items-center justify-center lg:justify-start gap-0 lg:gap-2.5 px-0 lg:px-3 py-2.5 lg:py-2 rounded-xl text-[#6b9080] hover:text-white hover:bg-white/7 text-[12px] font-medium transition-all"
@@ -185,14 +197,14 @@ export default function Sidebar() {
             <span className="material-symbols-outlined text-[18px] lg:text-[16px] shrink-0">
               {theme === 'dark' ? 'light_mode' : 'dark_mode'}
             </span>
-            <span className="hidden lg:inline">{theme === 'dark' ? 'Mwanga' : 'Giza'}</span>
+            <span className="hidden lg:inline">{theme === 'dark' ? t('Mwanga', 'Light') : t('Giza', 'Dark')}</span>
           </button>
           <button
             onClick={handleSignOut}
             className="w-full flex items-center justify-center lg:justify-start gap-0 lg:gap-2.5 px-0 lg:px-3 py-2.5 lg:py-2 rounded-xl text-[#6b9080] hover:text-[#f87171] hover:bg-red-500/8 text-[12px] font-medium transition-all"
           >
             <span className="material-symbols-outlined text-[18px] lg:text-[16px] shrink-0">logout</span>
-            <span className="hidden lg:inline">Toka</span>
+            <span className="hidden lg:inline">{t('Toka', 'Sign out')}</span>
           </button>
         </div>
       </div>
