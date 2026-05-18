@@ -153,7 +153,9 @@ export default function ParishPage() {
       const prevLat = parish?.location?.latitude?.toString() || '';
       const prevLng = parish?.location?.longitude?.toString() || '';
       const locationChanged = formData.latitude !== prevLat || formData.longitude !== prevLng;
-      const newLocationStatus = locationChanged && formData.latitude && formData.longitude ? 'pending' : locationStatus;
+      const newLocationStatus = locationChanged && formData.latitude && formData.longitude
+        ? 'pending'
+        : (locationStatus ?? null);  // undefined → null so Firestore never receives undefined
 
       const parishData: Record<string, unknown> = {
         name: formData.name, diocese: formData.diocese, address: formData.address,
@@ -177,7 +179,8 @@ export default function ParishPage() {
       if (formData.mpesaAmount)    parishData.mpesaAmount   = parseFloat(formData.mpesaAmount);
       if (formData.phone)          parishData.phone         = formData.phone;
       if (formData.email)          parishData.email         = formData.email;
-      parishData.imageUrls = formData.imageUrls;
+      // imageUrls: clean string array — user-side can read this directly per parish
+      parishData.imageUrls = formData.imageUrls.filter(Boolean);
       parishData.imageUrl  = formData.imageUrls[0] || null;
       parishData.currentSeason = formData.currentSeason || null;
       parishData.seasonNote    = formData.seasonNote    || null;
